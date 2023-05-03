@@ -48,10 +48,7 @@ int main(int argc, char **argv) {
 }
 
 // connect to valid server and read
-// connect to valid server and it client closes
 // connect to valid server and write
-// connect to valid server and it closes
-// connect to valid server and it aborts
 // move our socket between afd handles on each call
 // multiple sockets on one handle
 
@@ -181,6 +178,207 @@ TEST_F(AFDUnderstand, TestConnect)
    EXPECT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+
+   ReadClientClose(data.s);
+}
+
+TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   auto listeningSocket = CreateListeningSocket();
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   if (SOCKET_ERROR == shutdown(s, SD_SEND))
+   {
+      ErrorExit("shutdown");
+   }
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+
+   ReadClientClose(data.s);
+
+   closesocket(s);
+
+   // disconnected...
+
+   // level triggered; continues to return disconnected...
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+
+   ReadClientClose(data.s);      // contiues to return 0 
+}
+
+TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   auto listeningSocket = CreateListeningSocket();
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   if (SOCKET_ERROR == shutdown(s, SD_RECEIVE))
+   {
+      ErrorExit("shutdown");
+   }
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   closesocket(s);
+
+   // disconnected...
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+
+   ReadClientClose(data.s);
+}
+
+TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   auto listeningSocket = CreateListeningSocket();
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   if (SOCKET_ERROR == shutdown(s, SD_RECEIVE))
+   {
+      ErrorExit("shutdown");
+   }
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   Abort(s);
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_ABORT, pData->pollInfo.Handles[0].Events);
+
+   ReadFails(data.s, WSAECONNRESET);
+}
+
+TEST_F(AFDUnderstand, TestConnectAndLocalSend)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   auto listeningSocket = CreateListeningSocket();
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   const std::string testData("test");
+
+   Write(s, testData);
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE, pData->pollInfo.Handles[0].Events);
+
+   EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s));
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   closesocket(s);
 }
 
 TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
@@ -283,6 +481,8 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
    EXPECT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+
+   ReadClientClose(data.s);
 }
 
 TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)

@@ -29,6 +29,9 @@
 
 #include "shared.h"
 
+#include <string>
+#include <string_view>
+
 inline SOCKET CreateTCPSocket()
 {
    SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -93,6 +96,22 @@ struct ListeningSocket
    {
    }
 
+   SOCKET Accept()
+   {
+      sockaddr_in addr {};
+
+      int addressLength = sizeof(addr);
+
+      SOCKET accepted = accept(s, reinterpret_cast<sockaddr *>(&addr), &addressLength);
+
+      if (accepted == INVALID_SOCKET)
+      {
+         ErrorExit("accept");
+      }
+
+      return accepted;
+   }
+
    ~ListeningSocket()
    {
       closesocket(s);
@@ -148,6 +167,129 @@ ListeningSocket CreateListeningSocket(
    }
 
    return ListeningSocket(s, port);
+}
+
+inline void ReadClientClose(
+   SOCKET s)
+{
+   constexpr int bufferLength = 10;
+
+   char buffer[bufferLength]{};
+
+   const int bytes = recv(s, buffer, bufferLength, 0);
+
+   if (bytes == SOCKET_ERROR)
+   {
+      ErrorExit("recv");
+   }
+   else if (bytes != 0)
+   {
+      ErrorExit("recv - expected 0 got " + std::to_string(bytes));
+   }
+}
+
+inline void ReadFails(
+   SOCKET s,
+   const DWORD expectedError)
+{
+   constexpr int bufferLength = 10;
+
+   char buffer[bufferLength]{};
+
+   const int bytes = recv(s, buffer, bufferLength, 0);
+
+   if (bytes == SOCKET_ERROR)
+   {
+      const DWORD lastError = GetLastError();
+
+      if (lastError != expectedError)
+      {
+         ErrorExit("recv");
+      }
+   }
+   else
+   {
+      ErrorExit("recv - expected error got " + std::to_string(bytes) + " bytes");
+   }
+}
+
+inline void Write(
+   SOCKET s,
+   const std::string_view &message)
+{
+   const int length = message.length();
+
+   const int ret = send(s, message.data(), length, 0);
+
+   if (ret == SOCKET_ERROR)
+   {
+      ErrorExit("send");
+   }
+   else if (ret != length)
+   {
+      ErrorExit("send - expected to sent " + std::to_string(length) + " but sent " + std::to_string(ret));
+   }
+}
+
+inline size_t ReadAndDiscardAllAvailable(
+   SOCKET s)
+{
+   constexpr int bufferLength = 1024;
+
+   char buffer[bufferLength]{};
+
+   size_t totalBytes = 0;
+
+   bool done = false;
+   do
+   {
+      const int bytes = recv(s, buffer, bufferLength, 0);
+
+      if (bytes == SOCKET_ERROR)
+      {
+         const DWORD lastError = GetLastError();
+
+         if (lastError != WSAEWOULDBLOCK)
+         {
+            ErrorExit("ReadAndDiscardAllAvailable - recv");
+         }
+
+         done = true;
+      }
+      else
+      {
+         totalBytes += bytes;
+
+         done = (bytes == 0);
+      }
+   }
+   while (!done);
+
+   return totalBytes;
+}
+
+inline void Abort(
+   SOCKET s)
+{
+   LINGER lingerStruct;
+
+   lingerStruct.l_onoff = 1;
+   lingerStruct.l_linger = 0;
+
+   if (SOCKET_ERROR == ::setsockopt(
+      s,
+      SOL_SOCKET,
+      SO_LINGER,
+      reinterpret_cast<char *>(&lingerStruct),
+      sizeof(lingerStruct)))
+   {
+      ErrorExit("Abort - setsockopt");
+   }
+
+   if (SOCKET_ERROR == closesocket(s))
+   {
+      ErrorExit("Abort - closesocket");
+   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

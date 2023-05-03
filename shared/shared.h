@@ -30,12 +30,16 @@
 #include <WinSock2.h>
 
 #include <iostream>
+#include <string_view>
 
 #pragma comment(lib, "ws2_32.lib")
 
 using std::cout;
 using std::endl;
 using std::string;
+
+constexpr DWORD SHORT_TIME_NON_ZERO = 100;
+constexpr DWORD REASONABLE_TIME = 10000;
 
 inline string GetLastErrorMessage(
    DWORD last_error,
@@ -86,21 +90,21 @@ inline string GetLastErrorMessage(
 }
 
 inline void ErrorExit(
-   const char *pFunction,
+   const std::string_view &message,
    const DWORD lastError)
 {
-   cout << "Error: " << pFunction << " failed: " << lastError << endl;
+   cout << "Error: " << message << " failed: " << lastError << endl;
    cout << GetLastErrorMessage(lastError) << endl;
 
    exit(0);
 }
 
 inline void ErrorExit(
-   const char *pFunction)
+   const std::string_view &message)
 {
    const DWORD lastError = ::GetLastError();
 
-   ErrorExit(pFunction, lastError);
+   ErrorExit(message, lastError);
 }
 
 inline void InitialiseWinsock()
