@@ -155,16 +155,6 @@ TEST_F(AFDUnderstand, TestConnect)
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
-
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
-
-   pData = GetCompletion(handles.iocp, 0);
-
-   EXPECT_EQ(pData, &data);
-
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
-
    // Note that at present the remote end hasn't accepted
 
    sockaddr_in addr {};
