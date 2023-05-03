@@ -62,7 +62,8 @@ struct AfDWithIOCP
 };
 
 inline AfDWithIOCP CreateAfdAndIOCP(
-   LPCWSTR deviceName)
+   LPCWSTR deviceName,
+   const UCHAR flags = FILE_SKIP_SET_EVENT_ON_HANDLE)
 {
    const USHORT deviceNameLengthInBytes = static_cast<USHORT>(wcslen(deviceName) * sizeof(wchar_t));
 
@@ -121,7 +122,7 @@ inline AfDWithIOCP CreateAfdAndIOCP(
       ErrorExit("CreateIoCompletionPort");
    }
 
-   if (!SetFileCompletionNotificationModes(hAFD, FILE_SKIP_SET_EVENT_ON_HANDLE))
+   if (!SetFileCompletionNotificationModes(hAFD, flags))
    {
       ErrorExit("SetFileCompletionNotificationModes");
    }
@@ -223,6 +224,58 @@ inline bool SetupPollForSocketEvents(
    }
 
    return false;
+}
+
+inline PollData *PollForSocketEvents(
+   HANDLE hAfD,
+   PollData &data,
+   const ULONG events)
+{
+   AFD_POLL_INFO pollInfoIn {};
+
+   pollInfoIn.Exclusive = FALSE;
+   pollInfoIn.NumberOfHandles = 1;
+   pollInfoIn.Timeout.QuadPart = INT64_MAX;
+   pollInfoIn.Handles[0].Handle = reinterpret_cast<HANDLE>(GetBaseSocket(data.s));
+   pollInfoIn.Handles[0].Status = 0;
+   pollInfoIn.Handles[0].Events = events;
+
+   data.pollInfo = AFD_POLL_INFO{};
+
+   data.statusBlock = IO_STATUS_BLOCK{};
+
+   // kick off the poll
+
+   NTSTATUS status = NtDeviceIoControlFile(
+      hAfD,
+      nullptr,
+      nullptr,
+      &data,
+      &data.statusBlock,
+      IOCTL_AFD_POLL,
+      &pollInfoIn,
+      sizeof (AFD_POLL_INFO),
+      &data.pollInfo,
+      sizeof(AFD_POLL_INFO));
+
+   if (status == 0)
+   {
+      if (data.statusBlock.Status == 0)
+      {
+         return &data;
+      }
+
+      status = data.statusBlock.Status;
+   }
+
+   if (status != STATUS_PENDING)
+   {
+      SetLastError(RtlNtStatusToDosError(status));
+
+      ErrorExit("NtDeviceIoControlFile");
+   }
+
+   return nullptr;
 }
 
 inline void CancelPoll(

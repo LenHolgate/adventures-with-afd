@@ -295,6 +295,40 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 }
 
+TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
+{
+   if (!SetFileCompletionNotificationModes(handles.afd, FILE_SKIP_SET_EVENT_ON_HANDLE | FILE_SKIP_COMPLETION_PORT_ON_SUCCESS))
+   {
+      ErrorExit("SetFileCompletionNotificationModes");
+   }
+
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   auto listeningSocket = CreateListeningSocket();
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
+   // FILE_SKIP_COMPLETION_PORT_ON_SUCCESS means we get the poll information back immediately and
+   // nothing is queued to the IOCP
+
+   pData = PollForSocketEvents(handles.afd, data, AllEvents);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   EXPECT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // End of file: understand.cpp
 ///////////////////////////////////////////////////////////////////////////////
