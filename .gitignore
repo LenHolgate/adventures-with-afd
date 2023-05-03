@@ -1,3 +1,9 @@
 .vs
 x64
 *.user
+Output
+Release
+Debug
+third_party/GoogleTest/gmock
+third_party/GoogleTest/gtest
+
