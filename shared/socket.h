@@ -31,6 +31,7 @@
 
 #include <string>
 #include <string_view>
+#include <ws2tcpip.h>
 
 inline SOCKET CreateTCPSocket()
 {
@@ -56,23 +57,86 @@ inline SOCKET CreateNonBlockingTCPSocket()
    {
       ErrorExit("ioctlsocket");
    }
+
    return s;
 }
 
 constexpr USHORT NonListeningPort = 1;
 
+inline void SetRecvBuffer(
+   SOCKET s,
+   const int size)
+{
+   int setValue = size;
+
+   if (SOCKET_ERROR == ::setsockopt(s, SOL_SOCKET,  SO_RCVBUF, reinterpret_cast<const char *>(&setValue), sizeof(int)))
+   {
+      ErrorExit("setsockopt - SO_RCVBUF");
+   }
+
+   int getValue = 0;
+
+   int valueSize = sizeof(getValue);
+
+   if (SOCKET_ERROR != ::getsockopt(s, SOL_SOCKET,  SO_RCVBUF, reinterpret_cast<char *>(&getValue), &valueSize))
+   {
+      if (valueSize == sizeof(int))
+      {
+         if (getValue != setValue)
+         {
+            ErrorExit("getsockopt - SO_RCVBUF - failed to set size");
+         }
+      }
+      else
+      {
+         ErrorExit("getsockopt - SO_RCVBUF - result is not sizeof(int)");
+      }
+   }
+   else
+   {
+      ErrorExit("getsockopt - SO_RCVBUF");
+   }
+}
+
+inline void SetSendBuffer(
+   SOCKET s,
+   const int size)
+{
+   int setValue = size;
+
+   if (SOCKET_ERROR == ::setsockopt(s, SOL_SOCKET,  SO_SNDBUF, reinterpret_cast<const char *>(&setValue), sizeof(int)))
+   {
+      ErrorExit("setsockopt - SO_SNDBUF");
+   }
+
+   int getValue = 0;
+
+   int valueSize = sizeof(getValue);
+
+   if (SOCKET_ERROR != ::getsockopt(s, SOL_SOCKET,  SO_SNDBUF, reinterpret_cast<char *>(&getValue), &valueSize))
+   {
+      if (valueSize == sizeof(int))
+      {
+         if (getValue != setValue)
+         {
+            ErrorExit("getsockopt - SO_SNDBUF - failed to set size");
+         }
+      }
+      else
+      {
+         ErrorExit("getsockopt - SO_SNDBUF - result is not sizeof(int)");
+      }
+   }
+   else
+   {
+      ErrorExit("getsockopt - SO_SNDBUF");
+   }
+}
 void ConnectNonBlocking(
    SOCKET s,
-   const USHORT remotePort)
+   const sockaddr_in &addr)
 {
-   sockaddr_in addr {};
-
-   /* Attempt to connect to an address that we won't be able to connect to. */
-   addr.sin_family = AF_INET;
-   addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   addr.sin_port = htons(remotePort);
-
-   const int result = connect(s, reinterpret_cast<sockaddr *>(&addr), sizeof addr);
+   const int result = connect(s, reinterpret_cast<const sockaddr *>(&addr), sizeof addr);
 
    if (result == SOCKET_ERROR)
    {
@@ -84,6 +148,46 @@ void ConnectNonBlocking(
       }
    }
    ErrorExit("connect");
+}
+
+void ConnectNonBlocking(
+   SOCKET s,
+   const ULONG address,
+   const USHORT remotePort)
+{
+   sockaddr_in addr {};
+
+   /* Attempt to connect to an address that we won't be able to connect to. */
+   addr.sin_family = AF_INET;
+   addr.sin_addr.s_addr = htonl(address);
+   addr.sin_port = htons(remotePort);
+
+   ConnectNonBlocking(s, addr);
+}
+
+void ConnectNonBlocking(
+   SOCKET s,
+   const USHORT remotePort)
+{
+   ConnectNonBlocking(s, INADDR_LOOPBACK, remotePort);
+}
+
+void ConnectNonBlocking(
+   SOCKET s,
+   const std::string_view &address,
+   const USHORT remotePort)
+{
+   sockaddr_in addr {};
+
+   if (SOCKET_ERROR == inet_pton(AF_INET, address.data(), &addr.sin_addr))
+   {
+      ErrorExit("inet_pton");
+   }
+
+   addr.sin_family = AF_INET;
+   addr.sin_port = htons(remotePort);
+
+   ConnectNonBlocking(s, addr);
 }
 
 struct ListeningSocket
@@ -109,6 +213,15 @@ struct ListeningSocket
          ErrorExit("accept");
       }
 
+      // Set it as non-blocking
+
+      unsigned long one = 1;
+
+      if (0 != ioctlsocket(accepted, (long) FIONBIO, &one))
+      {
+         ErrorExit("ioctlsocket");
+      }
+
       return accepted;
    }
 
@@ -123,25 +236,27 @@ struct ListeningSocket
 };
 
 ListeningSocket CreateListeningSocket(
+   const int recvBufferSize,
+   sockaddr_in &addr,
    const USHORT basePort = 5050)
 {
    bool done = false;
 
    SOCKET s = CreateTCPSocket();
 
+   if (recvBufferSize != -1)
+   {
+      SetRecvBuffer(s, recvBufferSize);
+   }
+
    USHORT port = basePort;
 
-   sockaddr_in addr {};
-
-   /* Attempt to connect to an address that we won't be able to connect to. */
-   addr.sin_family = AF_INET;
-   addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
    do
    {
       addr.sin_port = htons(port);
 
-      if (0 == bind(s, reinterpret_cast<sockaddr *>(&addr), sizeof addr))
+      if (0 == bind(s, reinterpret_cast<const sockaddr *>(&addr), sizeof addr))
       {
          done = true;
       }
@@ -169,10 +284,39 @@ ListeningSocket CreateListeningSocket(
    return ListeningSocket(s, port);
 }
 
+ListeningSocket CreateListeningSocket(
+   const USHORT basePort = 5050)
+{
+   sockaddr_in addr {};
+
+   addr.sin_family = AF_INET;
+   addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+   return CreateListeningSocket(-1, addr, basePort);
+}
+
+ListeningSocket CreateListeningSocket(
+   const int recvBufferSize,
+   const std::string_view &address,
+   const USHORT basePort = 5050)
+{
+   sockaddr_in addr {};
+
+   if (SOCKET_ERROR == inet_pton(AF_INET, address.data(), &addr.sin_addr))
+   {
+      ErrorExit("inet_pton");
+   }
+
+   addr.sin_family = AF_INET;
+   addr.sin_port = htons(basePort);
+
+   return CreateListeningSocket(recvBufferSize, addr, basePort);
+}
+
 inline void ReadClientClose(
    SOCKET s)
 {
-   constexpr int bufferLength = 10;
+   constexpr int bufferLength = 1;
 
    char buffer[bufferLength]{};
 
@@ -218,7 +362,7 @@ inline void Write(
    const std::string_view &message,
    const int flags = 0)
 {
-   const int length = message.length();
+   const int length = static_cast<int>(message.length());
 
    const int ret = send(s, message.data(), length, flags);
 
@@ -231,6 +375,40 @@ inline void Write(
       ErrorExit("send - expected to sent " + std::to_string(length) + " but sent " + std::to_string(ret));
    }
 }
+
+inline int WriteUntilError(
+   SOCKET s,
+   const std::string_view &message,
+   const DWORD expectedError)
+{
+   const int length = static_cast<int>(message.length());
+
+   const int ret = send(s, message.data(), length, 0);
+
+   if (ret == SOCKET_ERROR)
+   {
+      const DWORD lastError = GetLastError();
+
+      if (lastError != expectedError)
+      {
+         ErrorExit("send");
+      }
+
+      return 0;
+   }
+   else if (ret != length)
+   {
+      const DWORD lastError = GetLastError();
+
+      if (lastError != expectedError)
+      {
+         ErrorExit("ReadAndDiscardAllAvailable - recv");
+      }
+   }
+
+   return ret;
+}
+
 
 inline size_t ReadAndDiscardAllAvailable(
    SOCKET s,
@@ -294,7 +472,7 @@ inline void Abort(
    }
 }
 
-void Close(
+inline void Close(
    SOCKET s)
 {
    if (SOCKET_ERROR == closesocket(s))

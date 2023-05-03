@@ -32,10 +32,10 @@
 #include <iostream>
 #include <string_view>
 
+#include "third_party/GoogleTest/gtest.h"
+
 #pragma comment(lib, "ws2_32.lib")
 
-using std::cout;
-using std::endl;
 using std::string;
 
 constexpr DWORD SHORT_TIME_NON_ZERO = 100;
@@ -93,10 +93,7 @@ inline void ErrorExit(
    const std::string_view &message,
    const DWORD lastError)
 {
-   cout << "Error: " << message << " failed: " << lastError << endl;
-   cout << GetLastErrorMessage(lastError) << endl;
-
-   exit(0);
+   FAIL() << "Error: " << message << " failed: " << lastError << GetLastErrorMessage(lastError);
 }
 
 inline void ErrorExit(

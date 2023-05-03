@@ -39,6 +39,8 @@
 
 #pragma comment(lib, "ntdll.lib")
 
+const std::string localhost("127.0.0.1");
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
@@ -47,7 +49,8 @@ int main(int argc, char **argv) {
   return RUN_ALL_TESTS();
 }
 
-// connect to valid server and write
+// accept
+// and AFD_POLL_LOCAL_CLOSE
 // move our socket between afd handles on each call
 // multiple sockets on one handle
 
@@ -483,6 +486,173 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
 
    EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s, MSG_OOB));
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   Close(s);
+}
+
+TEST_F(AFDUnderstand, TestConnectAndLocalSend)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   constexpr int recvBufferSize = 10;
+
+   auto listeningSocket = CreateListeningSocket(recvBufferSize, localhost);
+
+   SetSendBuffer(data.s, 10);
+
+   ConnectNonBlocking(data.s, localhost, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   const std::string testData("This message will be sent until it can't be sent");
+
+   const size_t length = testData.length();
+
+   size_t totalSent = 0;
+
+   bool done = false;
+
+   do
+   {
+      const int sent = WriteUntilError(data.s, testData, WSAEWOULDBLOCK);
+
+      totalSent += sent;
+
+      if (sent != length)
+      {
+         // We have had a WSAEWOULDBLOCK result.
+         // No events available as AFD_POLL_SEND was the only event set and we have filled the
+         // send and recv buffer and TCP flow control has prevented us sending any more...
+
+         EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+         done = true;
+      }
+      else
+      {
+         // write was OK, sent the full amount, this check is probably excessive for production code
+         // but interesting to see here in this test...
+
+         done = true;
+         // We MAY be able to still send without getting a WSAEWOULDBLOCK result..
+
+         if (SetupPollForSocketEvents(handles.afd, data, AllEvents))
+         {
+            pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+            EXPECT_EQ(pData, &data);
+
+            if (AFD_POLL_SEND == pData->pollInfo.Handles[0].Events)
+            {
+               done = false;
+            }
+         }
+
+      }
+   }
+   while (!done);
+
+   EXPECT_EQ(totalSent, ReadAndDiscardAllAvailable(s));
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   Close(s);
+}
+
+TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   constexpr int recvBufferSize = 10;
+
+   auto listeningSocket = CreateListeningSocket(recvBufferSize, localhost);
+
+   SetSendBuffer(data.s, 10);
+
+   ConnectNonBlocking(data.s, localhost, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   const std::string testData("This message will be sent until it can't be sent");
+
+   const size_t length = testData.length();
+
+   size_t totalSent = 0;
+
+   bool done = false;
+
+   do
+   {
+      const int sent = WriteUntilError(data.s, testData, WSAEWOULDBLOCK);
+
+      totalSent += sent;
+
+      if (sent != length)
+      {
+         // We have had a WSAEWOULDBLOCK result.
+
+         done = true;
+      }
+   }
+   while (!done);
+
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   EXPECT_EQ(totalSent, ReadAndDiscardAllAvailable(s));
 
    EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
