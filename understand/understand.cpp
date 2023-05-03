@@ -381,6 +381,130 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
    closesocket(s);
 }
 
+TEST_F(AFDUnderstand, TestConnectAndLocalSendOOB)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   auto listeningSocket = CreateListeningSocket();
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   const std::string testData("1");    // only one byte of OOB for TCP on Windows
+                                       // https://serverframework.com/asynchronousevents/2011/10/out-of-band-data-and-overlapped-io.html
+
+   Write(s, testData, MSG_OOB);
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
+
+   // No normal data...
+
+   EXPECT_EQ(0, ReadAndDiscardAllAvailable(data.s));
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
+
+   EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s, MSG_OOB));
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   closesocket(s);
+}
+
+TEST_F(AFDUnderstand, TestConnectAndLocalSendOOBAndNormalData)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   auto listeningSocket = CreateListeningSocket();
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   const std::string testData("1");    // only one byte of OOB for TCP on Windows
+                                       // https://serverframework.com/asynchronousevents/2011/10/out-of-band-data-and-overlapped-io.html
+
+   Write(s, testData, MSG_OOB);
+
+   // and 1 byte of normal data...
+
+   Write(s, testData);
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
+
+   // normal data...
+
+   EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s));
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
+
+   EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s, MSG_OOB));
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   closesocket(s);
+}
+
 TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));

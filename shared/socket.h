@@ -215,11 +215,12 @@ inline void ReadFails(
 
 inline void Write(
    SOCKET s,
-   const std::string_view &message)
+   const std::string_view &message,
+   const int flags = 0)
 {
    const int length = message.length();
 
-   const int ret = send(s, message.data(), length, 0);
+   const int ret = send(s, message.data(), length, flags);
 
    if (ret == SOCKET_ERROR)
    {
@@ -232,7 +233,8 @@ inline void Write(
 }
 
 inline size_t ReadAndDiscardAllAvailable(
-   SOCKET s)
+   SOCKET s,
+   const int flags = 0)
 {
    constexpr int bufferLength = 1024;
 
@@ -243,7 +245,7 @@ inline size_t ReadAndDiscardAllAvailable(
    bool done = false;
    do
    {
-      const int bytes = recv(s, buffer, bufferLength, 0);
+      const int bytes = recv(s, buffer, bufferLength, flags);
 
       if (bytes == SOCKET_ERROR)
       {
