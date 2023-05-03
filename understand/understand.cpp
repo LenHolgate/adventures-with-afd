@@ -47,7 +47,6 @@ int main(int argc, char **argv) {
   return RUN_ALL_TESTS();
 }
 
-// connect to valid server and read
 // connect to valid server and write
 // move our socket between afd handles on each call
 // multiple sockets on one handle
@@ -154,20 +153,11 @@ TEST_F(AFDUnderstand, TestConnect)
 
    // Note that at present the remote end hasn't accepted
 
-   sockaddr_in addr {};
-
-   int addressLength = sizeof(addr);
-
-   SOCKET s = accept(listeningSocket.s, reinterpret_cast<sockaddr *>(&addr), &addressLength);
-
-   if (s == INVALID_SOCKET)
-   {
-      ErrorExit("accept");
-   }
+   SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
-   closesocket(s);
+   Close(s);
 
    // disconnected...
 
@@ -219,7 +209,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    ReadClientClose(data.s);
 
-   closesocket(s);
+   Close(s);
 
    // disconnected...
 
@@ -271,7 +261,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   closesocket(s);
+   Close(s);
 
    // disconnected...
 
@@ -334,7 +324,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
    ReadFails(data.s, WSAECONNRESET);
 }
 
-TEST_F(AFDUnderstand, TestConnectAndLocalSend)
+TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
@@ -378,10 +368,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   closesocket(s);
+   Close(s);
 }
 
-TEST_F(AFDUnderstand, TestConnectAndLocalSendOOB)
+TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
@@ -438,10 +428,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSendOOB)
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   closesocket(s);
+   Close(s);
 }
 
-TEST_F(AFDUnderstand, TestConnectAndLocalSendOOBAndNormalData)
+TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
@@ -502,7 +492,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSendOOBAndNormalData)
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   closesocket(s);
+   Close(s);
 }
 
 TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
@@ -560,16 +550,7 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    // Note that at present the remote end hasn't accepted
 
-   sockaddr_in addr {};
-
-   int addressLength = sizeof(addr);
-
-   SOCKET s = accept(listeningSocket.s, reinterpret_cast<sockaddr *>(&addr), &addressLength);
-
-   if (s == INVALID_SOCKET)
-   {
-      ErrorExit("accept");
-   }
+   SOCKET s = listeningSocket.Accept();
 
    EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
@@ -586,7 +567,7 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    // accepted...
 
-   closesocket(s);
+   Close(s);
 
    // disconnected...
 
