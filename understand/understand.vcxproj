@@ -134,7 +134,9 @@
     <ClCompile Include="understand.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\shared\afd.h" />
     <ClInclude Include="..\shared\shared.h" />
+    <ClInclude Include="..\shared\socket.h" />
     <ClInclude Include="..\third_party\wepoll_magic.h" />
   </ItemGroup>
   <ItemGroup>
