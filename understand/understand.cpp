@@ -783,6 +783,47 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
    Close(s);
 }
 
+TEST_F(AFDUnderstand, TestAccept)
+{
+   // In this test we associate the listening socket with the afd handle and poll
+   // it for accepts...
+
+   auto listeningSocket = CreateListeningSocket();
+
+   PollData listeningData(listeningSocket.s);
+
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, listeningData, AllEvents));
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &listeningData);
+
+   EXPECT_EQ(AFD_POLL_ACCEPT, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   // poll the listening socket again...
+   // we would normally expect to poll the newly accepted socket as well...
+
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, listeningData, AllEvents));
+
+   Close(s);
+
+   // disconnected...
+
+   // No notification from closing accepted socket
+
+   EXPECT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
+}
+
 TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
