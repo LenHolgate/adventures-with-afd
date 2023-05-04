@@ -63,7 +63,7 @@ TEST(AFDExplore, TestConnectFail)
    // completions and we could, possibly, set 'FILE_SKIP_COMPLETION_PORT_ON_SUCCESS` for the
    // AFD association...
 
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    // poll is pending
 
@@ -75,7 +75,7 @@ TEST(AFDExplore, TestConnectFail)
 
    // the completion returns the PollData which needs to remain valid for the period of the poll
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_CONNECT_FAIL, pData->pollInfo.Handles[0].Events);
 }
@@ -107,7 +107,7 @@ class AFDUnderstand : public testing::Test
 
 TEST_F(AFDUnderstand, TestConnectCancel)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    ConnectNonBlocking(data.s, NonListeningPort);
 
@@ -115,14 +115,14 @@ TEST_F(AFDUnderstand, TestConnectCancel)
 
    PollData *pData = GetCompletion(handles.iocp, INFINITE, ERROR_OPERATION_ABORTED);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(0, pData->pollInfo.Handles[0].Events);
 }
 
 TEST_F(AFDUnderstand, TestConnectCancelAll)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    ConnectNonBlocking(data.s, NonListeningPort);
 
@@ -130,14 +130,14 @@ TEST_F(AFDUnderstand, TestConnectCancelAll)
 
    PollData *pData = GetCompletion(handles.iocp, INFINITE, ERROR_OPERATION_ABORTED);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(0, pData->pollInfo.Handles[0].Events);
 }
 
 TEST_F(AFDUnderstand, TestConnect)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -147,7 +147,7 @@ TEST_F(AFDUnderstand, TestConnect)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -161,11 +161,11 @@ TEST_F(AFDUnderstand, TestConnect)
 
    // disconnected...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
@@ -174,7 +174,7 @@ TEST_F(AFDUnderstand, TestConnect)
 
 TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -184,7 +184,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -199,11 +199,11 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
       ErrorExit("shutdown");
    }
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
@@ -215,11 +215,11 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    // level triggered; continues to return disconnected...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
@@ -228,7 +228,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
 TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -238,7 +238,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -253,11 +253,11 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
       ErrorExit("shutdown");
    }
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -265,11 +265,11 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
    // disconnected...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
@@ -278,7 +278,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
 TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -288,7 +288,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -303,21 +303,21 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
       ErrorExit("shutdown");
    }
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    Abort(s);
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_ABORT, pData->pollInfo.Handles[0].Events);
 
@@ -326,7 +326,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 
 TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -336,7 +336,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -350,21 +350,21 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 
    Write(s, testData);
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE, pData->pollInfo.Handles[0].Events);
 
    EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s));
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -373,7 +373,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 
 TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -383,7 +383,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -398,11 +398,11 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    Write(s, testData, MSG_OOB);
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
 
@@ -410,21 +410,21 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    EXPECT_EQ(0, ReadAndDiscardAllAvailable(data.s));
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
 
    EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s, MSG_OOB));
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -433,7 +433,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
 TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -443,7 +443,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -462,11 +462,11 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    Write(s, testData);
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
 
@@ -474,21 +474,21 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s));
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
 
    EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s, MSG_OOB));
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -497,7 +497,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
 TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    constexpr int recvBufferSize = 10;
 
@@ -511,7 +511,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -521,11 +521,11 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    // accepted...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -549,7 +549,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
          // No events available as AFD_POLL_SEND was the only event set and we have filled the
          // send and recv buffer and TCP flow control has prevented us sending any more...
 
-         EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+         ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
          done = true;
       }
@@ -565,7 +565,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
          {
             pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-            EXPECT_EQ(pData, &data);
+            ASSERT_EQ(pData, &data);
 
             if (AFD_POLL_SEND == pData->pollInfo.Handles[0].Events)
             {
@@ -579,11 +579,11 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    EXPECT_EQ(totalSent, ReadAndDiscardAllAvailable(s));
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -592,7 +592,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
 TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    constexpr int recvBufferSize = 10;
 
@@ -606,7 +606,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -616,11 +616,11 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    // accepted...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -647,15 +647,15 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
    }
    while (!done);
 
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    EXPECT_EQ(totalSent, ReadAndDiscardAllAvailable(s));
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -664,7 +664,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
 TEST_F(AFDUnderstand, TestConnectAndLocalClose)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -676,7 +676,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalClose)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -686,13 +686,13 @@ TEST_F(AFDUnderstand, TestConnectAndLocalClose)
 
    // accepted...
 
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
 
    Close(data.s);
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_LOCAL_CLOSE, pData->pollInfo.Handles[0].Events);
 
@@ -701,7 +701,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalClose)
 
 TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -713,7 +713,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -723,7 +723,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 
    // accepted...
 
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
 
    if (SOCKET_ERROR == shutdown(s, SD_SEND))
    {
@@ -732,7 +732,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 
    pData = GetCompletion(handles.iocp, REASONABLE_TIME);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
@@ -741,7 +741,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 
 TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -753,7 +753,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -763,7 +763,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 
    // accepted...
 
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
 
    if (SOCKET_ERROR == shutdown(s, SD_RECEIVE))
    {
@@ -772,7 +772,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 
    // No notification from shutting down recv side...
 
-   EXPECT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
 
    Close(s);
 }
@@ -786,7 +786,7 @@ TEST_F(AFDUnderstand, TestAccept)
 
    PollData listeningData(listeningSocket.s);
 
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, listeningData, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, listeningData, AllEvents));
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -794,7 +794,7 @@ TEST_F(AFDUnderstand, TestAccept)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &listeningData);
+   ASSERT_EQ(pData, &listeningData);
 
    EXPECT_EQ(AFD_POLL_ACCEPT, pData->pollInfo.Handles[0].Events);
 
@@ -807,7 +807,7 @@ TEST_F(AFDUnderstand, TestAccept)
    // poll the listening socket again...
    // we would normally expect to poll the newly accepted socket as well...
 
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, listeningData, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, listeningData, AllEvents));
 
    Close(s);
 
@@ -815,12 +815,12 @@ TEST_F(AFDUnderstand, TestAccept)
 
    // No notification from closing accepted socket
 
-   EXPECT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
 }
 
 TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -830,34 +830,34 @@ TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 }
 
 TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 {
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -867,7 +867,7 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -875,18 +875,18 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    const SOCKET s = listeningSocket.Accept();
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // This next poll will return the socket state as of NOW when we query the result
    // from the IOCP after the state change...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    // accepted...
 
@@ -896,17 +896,17 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // This next poll will report the disconnect...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
@@ -920,7 +920,7 @@ TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
       ErrorExit("SetFileCompletionNotificationModes");
    }
 
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -930,7 +930,7 @@ TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
 
    PollData *pData = GetCompletion(handles.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -940,12 +940,91 @@ TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
 
    pData = PollForSocketEvents(handles.afd, data, AllEvents);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   EXPECT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
 }
+
+TEST_F(AFDUnderstand, TestPollOnceGivesOneCompletion)
+{
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   ConnectNonBlocking(data.s, NonListeningPort);
+
+   CancelPoll(handles.afd, data);
+
+   PollData *pData = GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, ERROR_OPERATION_ABORTED);
+
+   ASSERT_EQ(pData, &data);
+
+   EXPECT_EQ(0, pData->pollInfo.Handles[0].Events);
+
+   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
+
+   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
+}
+
+
+TEST_F(AFDUnderstand, TestPollTwiceSameDataGivesTwoCompletions)
+{
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   ConnectNonBlocking(data.s, NonListeningPort);
+
+   CancelPoll(handles.afd, data);
+
+   PollData *pData = GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, ERROR_OPERATION_ABORTED);
+
+   ASSERT_EQ(pData, &data);
+
+   EXPECT_EQ(0, pData->pollInfo.Handles[0].Events);
+
+   pData = GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, ERROR_OPERATION_ABORTED);
+
+   ASSERT_EQ(pData, &data);
+
+   EXPECT_EQ(0, pData->pollInfo.Handles[0].Events);
+
+   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
+}
+
+TEST_F(AFDUnderstand, TestPollTwiceSameDataDifferentEvents)
+{
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AFD_POLL_SEND));
+
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AFD_POLL_ABORT));
+
+   const auto listeningSocket = CreateListeningSocket();
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   ASSERT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // second poll is for different events...
+
+   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
+
+   const SOCKET s = listeningSocket.Accept();
+
+   Abort(s);
+
+   pData = GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+
+   ASSERT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_ABORT, pData->pollInfo.Handles[0].Events);
+}
+
 
 TEST(AFDMultipleAFD, TestDuplicateName)
 {
@@ -959,6 +1038,8 @@ TEST(AFDMultipleAFD, TestDuplicateName)
    auto handles1 = CreateAfdAndIOCP(deviceName);
 
    auto handles2 = CreateAfdAndIOCP(deviceName);
+
+   EXPECT_NE(handles1.afd, handles2.afd);
 }
 
 TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
@@ -976,7 +1057,7 @@ TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
 
    // Associate with 1st afd handle...
 
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles1.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles1.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -986,27 +1067,27 @@ TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
 
    PollData *pData = GetCompletion(handles1.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Nothing on the other IOCP...
-   EXPECT_EQ(nullptr, GetCompletion(handles2.iocp, 0, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletion(handles2.iocp, 0, WAIT_TIMEOUT));
 
    // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
    // but we use a different afd handle and IOCP, potentially moving this socket from one thread
    // to another...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles2.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles2.afd, data, AllEvents));
 
    pData = GetCompletion(handles2.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Nothing on the other IOCP...
-   EXPECT_EQ(nullptr, GetCompletion(handles1.iocp, 0, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletion(handles1.iocp, 0, WAIT_TIMEOUT));
 }
 
 TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
@@ -1023,7 +1104,7 @@ TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
 
    // Associate with 1st afd handle...
 
-   EXPECT_EQ(false, SetupPollForSocketEvents(handles1.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles1.afd, data, AllEvents));
 
    const auto listeningSocket = CreateListeningSocket();
 
@@ -1033,7 +1114,7 @@ TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
 
    PollData *pData = GetCompletion(handles1.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
@@ -1041,11 +1122,11 @@ TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
    // but we use a different afd handle and IOCP, potentially moving this socket from one thread
    // to another...
 
-   EXPECT_EQ(true, SetupPollForSocketEvents(handles2.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles2.afd, data, AllEvents));
 
    pData = GetCompletion(handles2.iocp, 0);
 
-   EXPECT_EQ(pData, &data);
+   ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 }
