@@ -39,8 +39,6 @@
 
 #pragma comment(lib, "ntdll.lib")
 
-const std::string localhost("127.0.0.1");
-
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
@@ -504,11 +502,11 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    constexpr int recvBufferSize = 10;
 
-   auto listeningSocket = CreateListeningSocket(recvBufferSize, localhost);
+   auto listeningSocket = CreateListeningSocketWithRecvBufferSpecified(recvBufferSize);
 
    SetSendBuffer(data.s, 10);
 
-   ConnectNonBlocking(data.s, localhost, listeningSocket.port);
+   ConnectNonBlocking(data.s, listeningSocket.port);
 
    // connect will complete immediately and report the socket as writable...
 
@@ -599,11 +597,11 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    constexpr int recvBufferSize = 10;
 
-   auto listeningSocket = CreateListeningSocket(recvBufferSize, localhost);
+   auto listeningSocket = CreateListeningSocketWithRecvBufferSpecified(recvBufferSize);
 
    SetSendBuffer(data.s, 10);
 
-   ConnectNonBlocking(data.s, localhost, listeningSocket.port);
+   ConnectNonBlocking(data.s, listeningSocket.port);
 
    // connect will complete immediately and report the socket as writable...
 

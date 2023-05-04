@@ -284,6 +284,18 @@ ListeningSocket CreateListeningSocket(
    return ListeningSocket(s, port);
 }
 
+ListeningSocket CreateListeningSocketWithRecvBufferSpecified(
+   const int recvBufferSize,
+   const USHORT basePort = 5050)
+{
+   sockaddr_in addr {};
+
+   addr.sin_family = AF_INET;
+   addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+   return CreateListeningSocket(recvBufferSize, addr, basePort);
+}
+
 ListeningSocket CreateListeningSocket(
    const USHORT basePort = 5050)
 {
