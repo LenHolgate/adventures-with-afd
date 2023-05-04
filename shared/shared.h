@@ -93,7 +93,11 @@ inline void ErrorExit(
    const std::string_view &message,
    const DWORD lastError)
 {
-   FAIL() << "Error: " << message << " failed: " << lastError << GetLastErrorMessage(lastError);
+   std:: cout << "Error: " << message << " failed: " << lastError << " - " << GetLastErrorMessage(lastError) << std::endl;
+
+   // FAIL() returns from here and we can't do that as we rely on ErrorExit to actually exit...
+   //exit(1);     // exit aborts all tests
+   throw std::exception("test failed");
 }
 
 inline void ErrorExit(
