@@ -137,15 +137,18 @@ inline AfDWithIOCP CreateAfdAndIOCP()
    return CreateAfdAndIOCP(deviceName);
 }
 
-static constexpr ULONG AllEvents =
+static constexpr ULONG AllEventsExceptSend =
    AFD_POLL_RECEIVE |                  // readable
    AFD_POLL_RECEIVE_EXPEDITED |        // out of band
-   AFD_POLL_SEND |                     // writable
    AFD_POLL_DISCONNECT |               // client close
    AFD_POLL_ABORT |                    // closed
    AFD_POLL_LOCAL_CLOSE |              // ?
    AFD_POLL_ACCEPT |                   // connection accepted on listening
    AFD_POLL_CONNECT_FAIL;              // outbound connection failed
+
+static constexpr ULONG AllEvents =
+   AllEventsExceptSend |               // All of the rest
+   AFD_POLL_SEND;                      // writable
 
 
 #ifndef CONTAINING_RECORD

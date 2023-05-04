@@ -48,7 +48,6 @@ int main(int argc, char **argv) {
 }
 
 // accept
-// and AFD_POLL_LOCAL_CLOSE
 // move our socket between afd handles on each call
 // multiple sockets on one handle
 
@@ -659,6 +658,127 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
    EXPECT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   Close(s);
+}
+
+TEST_F(AFDUnderstand, TestConnectAndLocalClose)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   constexpr int recvBufferSize = 10;
+
+   auto listeningSocket = CreateListeningSocket();
+
+   SetSendBuffer(data.s, 10);
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
+
+   Close(data.s);
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_LOCAL_CLOSE, pData->pollInfo.Handles[0].Events);
+
+   Close(s);
+}
+
+TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   constexpr int recvBufferSize = 10;
+
+   auto listeningSocket = CreateListeningSocket();
+
+   SetSendBuffer(data.s, 10);
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
+
+   if (SOCKET_ERROR == shutdown(s, SD_SEND))
+   {
+      ErrorExit("shutdown");
+   }
+
+   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+
+   Close(s);
+}
+
+TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
+{
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+
+   constexpr int recvBufferSize = 10;
+
+   auto listeningSocket = CreateListeningSocket();
+
+   SetSendBuffer(data.s, 10);
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Note that at present the remote end hasn't accepted
+
+   SOCKET s = listeningSocket.Accept();
+
+   // accepted...
+
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
+
+   if (SOCKET_ERROR == shutdown(s, SD_RECEIVE))
+   {
+      ErrorExit("shutdown");
+   }
+
+   // No notification from shutting down recv side...
+
+   EXPECT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
 
    Close(s);
 }
