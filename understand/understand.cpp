@@ -35,12 +35,10 @@
 
 #include <winternl.h>
 
-#include <iostream>
-
 #pragma comment(lib, "ntdll.lib")
 
 int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+   testing::InitGoogleTest(&argc, argv);
 
   InitialiseWinsock();
 
@@ -49,9 +47,9 @@ int main(int argc, char **argv) {
 
 TEST(AFDExplore, TestConnectFail)
 {
-   static LPCWSTR deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
+   static auto deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
 
-   auto handles = CreateAfdAndIOCP(deviceName);
+   const auto handles = CreateAfdAndIOCP(deviceName);
 
    // As we'll see below, the 'PollData' (socket, status block and outbound poll info) need to stay
    // valid until the event completes...
@@ -84,6 +82,14 @@ TEST(AFDExplore, TestConnectFail)
 
 class AFDUnderstand : public testing::Test
 {
+   public :
+
+      AFDUnderstand(const AFDUnderstand &) = delete;
+      AFDUnderstand(AFDUnderstand &&) = delete;
+
+      AFDUnderstand& operator=(const AFDUnderstand &) = delete;
+      AFDUnderstand& operator=(AFDUnderstand &&) = delete;
+
    protected :
 
       AFDUnderstand()
@@ -92,9 +98,7 @@ class AFDUnderstand : public testing::Test
       {
       }
 
-      ~AFDUnderstand()
-      {
-      }
+      ~AFDUnderstand() override = default;
 
       AfDWithIOCP handles;
 
@@ -135,7 +139,7 @@ TEST_F(AFDUnderstand, TestConnect)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -149,7 +153,7 @@ TEST_F(AFDUnderstand, TestConnect)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -172,7 +176,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -186,7 +190,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -226,7 +230,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -240,7 +244,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -276,7 +280,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -290,7 +294,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -324,7 +328,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -338,7 +342,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -371,7 +375,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -385,7 +389,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -431,7 +435,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -445,7 +449,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -497,7 +501,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    constexpr int recvBufferSize = 10;
 
-   auto listeningSocket = CreateListeningSocketWithRecvBufferSpecified(recvBufferSize);
+   const auto listeningSocket = CreateListeningSocketWithRecvBufferSpecified(recvBufferSize);
 
    SetSendBuffer(data.s, 10);
 
@@ -513,7 +517,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -535,7 +539,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    do
    {
-      const int sent = WriteUntilError(data.s, testData, WSAEWOULDBLOCK);
+      const size_t sent = WriteUntilError(data.s, testData, WSAEWOULDBLOCK);
 
       totalSent += sent;
 
@@ -592,7 +596,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    constexpr int recvBufferSize = 10;
 
-   auto listeningSocket = CreateListeningSocketWithRecvBufferSpecified(recvBufferSize);
+   const auto listeningSocket = CreateListeningSocketWithRecvBufferSpecified(recvBufferSize);
 
    SetSendBuffer(data.s, 10);
 
@@ -608,7 +612,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -630,7 +634,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    do
    {
-      const int sent = WriteUntilError(data.s, testData, WSAEWOULDBLOCK);
+      const size_t sent = WriteUntilError(data.s, testData, WSAEWOULDBLOCK);
 
       totalSent += sent;
 
@@ -662,9 +666,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalClose)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   constexpr int recvBufferSize = 10;
-
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    SetSendBuffer(data.s, 10);
 
@@ -680,7 +682,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalClose)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -701,9 +703,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   constexpr int recvBufferSize = 10;
-
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    SetSendBuffer(data.s, 10);
 
@@ -719,7 +719,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -743,9 +743,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   constexpr int recvBufferSize = 10;
-
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    SetSendBuffer(data.s, 10);
 
@@ -761,7 +759,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -784,7 +782,7 @@ TEST_F(AFDUnderstand, TestAccept)
    // In this test we associate the listening socket with the afd handle and poll
    // it for accepts...
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    PollData listeningData(listeningSocket.s);
 
@@ -802,7 +800,7 @@ TEST_F(AFDUnderstand, TestAccept)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    // accepted...
 
@@ -824,7 +822,7 @@ TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -861,7 +859,7 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 {
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -875,7 +873,7 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    // Note that at present the remote end hasn't accepted
 
-   SOCKET s = listeningSocket.Accept();
+   const SOCKET s = listeningSocket.Accept();
 
    EXPECT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
@@ -924,7 +922,7 @@ TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
 
    EXPECT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -956,7 +954,7 @@ TEST(AFDMultipleAFD, TestDuplicateName)
    // Using Process Explorer the two \device\Afd handles appear to be unnamed and
    // at different addresses...
 
-   static LPCWSTR deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
+   static auto deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
 
    auto handles1 = CreateAfdAndIOCP(deviceName);
 
@@ -968,11 +966,11 @@ TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
    // It seems you can open the same device name multiple times and get different handles
    // back ...
 
-   static LPCWSTR deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
+   static auto deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
 
-   auto handles1 = CreateAfdAndIOCP(deviceName);
+   const auto handles1 = CreateAfdAndIOCP(deviceName);
 
-   auto handles2 = CreateAfdAndIOCP(deviceName);
+   const auto handles2 = CreateAfdAndIOCP(deviceName);
 
    PollData data(CreateNonBlockingTCPSocket());
 
@@ -980,7 +978,7 @@ TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
 
    EXPECT_EQ(false, SetupPollForSocketEvents(handles1.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 
@@ -1013,13 +1011,13 @@ TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
 
 TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
 {
-   static LPCWSTR deviceName1 = L"\\Device\\Afd\\explore1";   // Arbitrary name in the Afd namespace
+   static auto deviceName1 = L"\\Device\\Afd\\explore1";   // Arbitrary name in the Afd namespace
 
-   auto handles1 = CreateAfdAndIOCP(deviceName1);
+   const auto handles1 = CreateAfdAndIOCP(deviceName1);
 
-   static LPCWSTR deviceName2 = L"\\Device\\Afd\\explore2";   // Arbitrary name in the Afd namespace
+   static auto deviceName2 = L"\\Device\\Afd\\explore2";   // Arbitrary name in the Afd namespace
 
-   auto handles2 = CreateAfdAndIOCP(deviceName2);
+   const auto handles2 = CreateAfdAndIOCP(deviceName2);
 
    PollData data(CreateNonBlockingTCPSocket());
 
@@ -1027,7 +1025,7 @@ TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
 
    EXPECT_EQ(false, SetupPollForSocketEvents(handles1.afd, data, AllEvents));
 
-   auto listeningSocket = CreateListeningSocket();
+   const auto listeningSocket = CreateListeningSocket();
 
    ConnectNonBlocking(data.s, listeningSocket.port);
 

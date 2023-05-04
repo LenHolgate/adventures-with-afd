@@ -62,7 +62,10 @@
 
 #include "../shared/shared.h"
 
-#define IOCTL_AFD_POLL 0x00012024
+enum
+{
+   IOCTL_AFD_POLL = 0x00012024
+};
 
 struct AFD_POLL_HANDLE_INFO {
   HANDLE Handle;
@@ -85,18 +88,21 @@ struct AFD_POLL_INFO {
 #define SIO_BASE_HANDLE 0x48000022
 #endif
 
-#define AFD_POLL_RECEIVE           0x0001
-#define AFD_POLL_RECEIVE_EXPEDITED 0x0002
-#define AFD_POLL_SEND              0x0004
-#define AFD_POLL_DISCONNECT        0x0008
-#define AFD_POLL_ABORT             0x0010
-#define AFD_POLL_LOCAL_CLOSE       0x0020
-#define AFD_POLL_ACCEPT            0x0080
-#define AFD_POLL_CONNECT_FAIL      0x0100
+enum
+{
+   AFD_POLL_RECEIVE           = 0x0001,
+   AFD_POLL_RECEIVE_EXPEDITED = 0x0002,
+   AFD_POLL_SEND              = 0x0004,
+   AFD_POLL_DISCONNECT        = 0x0008,
+   AFD_POLL_ABORT             = 0x0010,
+   AFD_POLL_LOCAL_CLOSE       = 0x0020,
+   AFD_POLL_ACCEPT            = 0x0080,
+   AFD_POLL_CONNECT_FAIL      = 0x0100
+};
 
 static SOCKET GetBaseSocket(
-   SOCKET s,
-   DWORD ioctl)
+   const SOCKET s,
+   const DWORD ioctl)
 {
    SOCKET baseSocket;
 

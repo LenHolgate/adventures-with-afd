@@ -30,12 +30,11 @@
 #include "shared.h"
 
 #include <string>
-#include <string_view>
 #include <ws2tcpip.h>
 
 inline SOCKET CreateTCPSocket()
 {
-   SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+   const SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
    if (s == INVALID_SOCKET)
    {
@@ -47,13 +46,13 @@ inline SOCKET CreateTCPSocket()
 
 inline SOCKET CreateNonBlockingTCPSocket()
 {
-   SOCKET s = CreateTCPSocket();
+   const SOCKET s = CreateTCPSocket();
 
    // Set it as non-blocking
 
    unsigned long one = 1;
 
-   if (0 != ioctlsocket(s, (long) FIONBIO, &one))
+   if (0 != ioctlsocket(s, FIONBIO, &one))
    {
       ErrorExit("ioctlsocket");
    }
@@ -64,25 +63,23 @@ inline SOCKET CreateNonBlockingTCPSocket()
 constexpr USHORT NonListeningPort = 1;
 
 inline void SetRecvBuffer(
-   SOCKET s,
+   const SOCKET s,
    const int size)
 {
-   int setValue = size;
-
-   if (SOCKET_ERROR == ::setsockopt(s, SOL_SOCKET,  SO_RCVBUF, reinterpret_cast<const char *>(&setValue), sizeof(int)))
+   if (SOCKET_ERROR == setsockopt(s, SOL_SOCKET,  SO_RCVBUF, reinterpret_cast<const char *>(&size), sizeof(int)))
    {
       ErrorExit("setsockopt - SO_RCVBUF");
    }
 
    int getValue = 0;
 
-   int valueSize = sizeof(getValue);
+   int valueSize = sizeof getValue;
 
-   if (SOCKET_ERROR != ::getsockopt(s, SOL_SOCKET,  SO_RCVBUF, reinterpret_cast<char *>(&getValue), &valueSize))
+   if (SOCKET_ERROR != getsockopt(s, SOL_SOCKET,  SO_RCVBUF, reinterpret_cast<char *>(&getValue), &valueSize))
    {
       if (valueSize == sizeof(int))
       {
-         if (getValue != setValue)
+         if (getValue != size)
          {
             ErrorExit("getsockopt - SO_RCVBUF - failed to set size");
          }
@@ -99,25 +96,23 @@ inline void SetRecvBuffer(
 }
 
 inline void SetSendBuffer(
-   SOCKET s,
+   const SOCKET s,
    const int size)
 {
-   int setValue = size;
-
-   if (SOCKET_ERROR == ::setsockopt(s, SOL_SOCKET,  SO_SNDBUF, reinterpret_cast<const char *>(&setValue), sizeof(int)))
+   if (SOCKET_ERROR == setsockopt(s, SOL_SOCKET,  SO_SNDBUF, reinterpret_cast<const char *>(&size), sizeof(int)))
    {
       ErrorExit("setsockopt - SO_SNDBUF");
    }
 
    int getValue = 0;
 
-   int valueSize = sizeof(getValue);
+   int valueSize = sizeof getValue;
 
-   if (SOCKET_ERROR != ::getsockopt(s, SOL_SOCKET,  SO_SNDBUF, reinterpret_cast<char *>(&getValue), &valueSize))
+   if (SOCKET_ERROR != getsockopt(s, SOL_SOCKET,  SO_SNDBUF, reinterpret_cast<char *>(&getValue), &valueSize))
    {
       if (valueSize == sizeof(int))
       {
-         if (getValue != setValue)
+         if (getValue != size)
          {
             ErrorExit("getsockopt - SO_SNDBUF - failed to set size");
          }
@@ -132,8 +127,9 @@ inline void SetSendBuffer(
       ErrorExit("getsockopt - SO_SNDBUF");
    }
 }
-void ConnectNonBlocking(
-   SOCKET s,
+
+inline void ConnectNonBlocking(
+   const SOCKET s,
    const sockaddr_in &addr)
 {
    const int result = connect(s, reinterpret_cast<const sockaddr *>(&addr), sizeof addr);
@@ -150,8 +146,8 @@ void ConnectNonBlocking(
    ErrorExit("connect");
 }
 
-void ConnectNonBlocking(
-   SOCKET s,
+inline void ConnectNonBlocking(
+   const SOCKET s,
    const ULONG address,
    const USHORT remotePort)
 {
@@ -165,15 +161,15 @@ void ConnectNonBlocking(
    ConnectNonBlocking(s, addr);
 }
 
-void ConnectNonBlocking(
-   SOCKET s,
+inline void ConnectNonBlocking(
+   const SOCKET s,
    const USHORT remotePort)
 {
    ConnectNonBlocking(s, INADDR_LOOPBACK, remotePort);
 }
 
-void ConnectNonBlocking(
-   SOCKET s,
+inline void ConnectNonBlocking(
+   const SOCKET s,
    const std::string_view &address,
    const USHORT remotePort)
 {
@@ -193,20 +189,26 @@ void ConnectNonBlocking(
 struct ListeningSocket
 {
    ListeningSocket(
-      SOCKET s,
-      USHORT port)
+      const SOCKET s,
+      const USHORT port)
       :  s(s),
          port(port)
    {
    }
 
-   SOCKET Accept()
+   ListeningSocket(const ListeningSocket &) = delete;
+   ListeningSocket(ListeningSocket &&) = delete;
+
+   ListeningSocket& operator=(const ListeningSocket &) = delete;
+   ListeningSocket& operator=(ListeningSocket &&) = delete;
+
+   [[nodiscard]] SOCKET Accept() const
    {
       sockaddr_in addr {};
 
-      int addressLength = sizeof(addr);
+      int addressLength = sizeof addr;
 
-      SOCKET accepted = accept(s, reinterpret_cast<sockaddr *>(&addr), &addressLength);
+      const SOCKET accepted = accept(s, reinterpret_cast<sockaddr *>(&addr), &addressLength);
 
       if (accepted == INVALID_SOCKET)
       {
@@ -217,7 +219,7 @@ struct ListeningSocket
 
       unsigned long one = 1;
 
-      if (0 != ioctlsocket(accepted, (long) FIONBIO, &one))
+      if (0 != ioctlsocket(accepted, FIONBIO, &one))
       {
          ErrorExit("ioctlsocket");
       }
@@ -235,14 +237,14 @@ struct ListeningSocket
    USHORT port;
 };
 
-ListeningSocket CreateListeningSocket(
+inline ListeningSocket CreateListeningSocket(
    const int recvBufferSize,
    sockaddr_in &addr,
    const USHORT basePort = 5050)
 {
    bool done = false;
 
-   SOCKET s = CreateTCPSocket();
+   const SOCKET s = CreateTCPSocket();
 
    if (recvBufferSize != -1)
    {
@@ -284,7 +286,7 @@ ListeningSocket CreateListeningSocket(
    return ListeningSocket(s, port);
 }
 
-ListeningSocket CreateListeningSocketWithRecvBufferSpecified(
+inline ListeningSocket CreateListeningSocketWithRecvBufferSpecified(
    const int recvBufferSize,
    const USHORT basePort = 5050)
 {
@@ -296,7 +298,7 @@ ListeningSocket CreateListeningSocketWithRecvBufferSpecified(
    return CreateListeningSocket(recvBufferSize, addr, basePort);
 }
 
-ListeningSocket CreateListeningSocket(
+inline ListeningSocket CreateListeningSocket(
    const USHORT basePort = 5050)
 {
    sockaddr_in addr {};
@@ -307,7 +309,7 @@ ListeningSocket CreateListeningSocket(
    return CreateListeningSocket(-1, addr, basePort);
 }
 
-ListeningSocket CreateListeningSocket(
+inline ListeningSocket CreateListeningSocket(
    const int recvBufferSize,
    const std::string_view &address,
    const USHORT basePort = 5050)
@@ -326,7 +328,7 @@ ListeningSocket CreateListeningSocket(
 }
 
 inline void ReadClientClose(
-   SOCKET s)
+   const SOCKET s)
 {
    constexpr int bufferLength = 1;
 
@@ -338,14 +340,15 @@ inline void ReadClientClose(
    {
       ErrorExit("recv");
    }
-   else if (bytes != 0)
+
+   if (bytes != 0)
    {
       ErrorExit("recv - expected 0 got " + std::to_string(bytes));
    }
 }
 
 inline void ReadFails(
-   SOCKET s,
+   const SOCKET s,
    const DWORD expectedError)
 {
    constexpr int bufferLength = 10;
@@ -370,7 +373,7 @@ inline void ReadFails(
 }
 
 inline void Write(
-   SOCKET s,
+   const SOCKET s,
    const std::string_view &message,
    const int flags = 0)
 {
@@ -382,14 +385,15 @@ inline void Write(
    {
       ErrorExit("send");
    }
-   else if (ret != length)
+
+   if (ret != length)
    {
       ErrorExit("send - expected to sent " + std::to_string(length) + " but sent " + std::to_string(ret));
    }
 }
 
 inline int WriteUntilError(
-   SOCKET s,
+   const SOCKET s,
    const std::string_view &message,
    const DWORD expectedError)
 {
@@ -408,7 +412,8 @@ inline int WriteUntilError(
 
       return 0;
    }
-   else if (ret != length)
+
+   if (ret != length)
    {
       const DWORD lastError = GetLastError();
 
@@ -423,7 +428,7 @@ inline int WriteUntilError(
 
 
 inline size_t ReadAndDiscardAllAvailable(
-   SOCKET s,
+   const SOCKET s,
    const int flags = 0)
 {
    constexpr int bufferLength = 1024;
@@ -433,6 +438,7 @@ inline size_t ReadAndDiscardAllAvailable(
    size_t totalBytes = 0;
 
    bool done = false;
+
    do
    {
       const int bytes = recv(s, buffer, bufferLength, flags);
@@ -461,19 +467,19 @@ inline size_t ReadAndDiscardAllAvailable(
 }
 
 inline void Abort(
-   SOCKET s)
+   const SOCKET s)
 {
    LINGER lingerStruct;
 
    lingerStruct.l_onoff = 1;
    lingerStruct.l_linger = 0;
 
-   if (SOCKET_ERROR == ::setsockopt(
+   if (SOCKET_ERROR == setsockopt(
       s,
       SOL_SOCKET,
       SO_LINGER,
       reinterpret_cast<char *>(&lingerStruct),
-      sizeof(lingerStruct)))
+      sizeof lingerStruct))
    {
       ErrorExit("Abort - setsockopt");
    }
@@ -485,7 +491,7 @@ inline void Abort(
 }
 
 inline void Close(
-   SOCKET s)
+   const SOCKET s)
 {
    if (SOCKET_ERROR == closesocket(s))
    {

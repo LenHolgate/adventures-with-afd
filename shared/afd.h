@@ -36,22 +36,27 @@
 struct AfDWithIOCP
 {
    AfDWithIOCP()
-      : afd(0),
-        iocp(0)
+      : afd(nullptr),
+        iocp(nullptr)
    {
    }
 
    AfDWithIOCP(
-      HANDLE afd,
-      HANDLE iocp)
+      const HANDLE afd,
+      const HANDLE iocp)
       : afd(afd),
         iocp(iocp)
    {
    }
 
+   AfDWithIOCP(const AfDWithIOCP &) = delete;
+   AfDWithIOCP(AfDWithIOCP &&) = delete;
+
+   AfDWithIOCP& operator=(const AfDWithIOCP &) = delete;
+   AfDWithIOCP& operator=(AfDWithIOCP &&) = delete;
+
    ~AfDWithIOCP()
    {
-
       CloseHandle(iocp);
 
       CloseHandle(afd);
@@ -62,10 +67,10 @@ struct AfDWithIOCP
 };
 
 inline AfDWithIOCP CreateAfdAndIOCP(
-   LPCWSTR deviceName,
+   const LPCWSTR deviceName,
    const UCHAR flags = FILE_SKIP_SET_EVENT_ON_HANDLE)
 {
-   const USHORT deviceNameLengthInBytes = static_cast<USHORT>(wcslen(deviceName) * sizeof(wchar_t));
+   const auto deviceNameLengthInBytes = static_cast<USHORT>(wcslen(deviceName) * sizeof(wchar_t));
 
    static const UNICODE_STRING deviceNameUString { deviceNameLengthInBytes, deviceNameLengthInBytes, const_cast<LPWSTR>(deviceName) };
 
@@ -91,7 +96,7 @@ inline AfDWithIOCP CreateAfdAndIOCP(
    // See https://notgull.github.io/device-afd/ for more useful information about \Device\Afd and why
    // it's useful
 
-   NTSTATUS status = NtCreateFile(
+   const NTSTATUS status = NtCreateFile(
       &hAFD,
       SYNCHRONIZE,
       &attributes,
@@ -113,7 +118,7 @@ inline AfDWithIOCP CreateAfdAndIOCP(
 
    // Create an IOCP for notifications...
 
-   HANDLE hIOCP = CreateIOCP();
+   const HANDLE hIOCP = CreateIOCP();
 
    // Associate the AFD handle with the IOCP...
 
@@ -132,7 +137,7 @@ inline AfDWithIOCP CreateAfdAndIOCP(
 
 inline AfDWithIOCP CreateAfdAndIOCP()
 {
-   static LPCWSTR deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
+   static auto deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
 
    return CreateAfdAndIOCP(deviceName);
 }
@@ -159,13 +164,19 @@ static constexpr ULONG AllEvents =
 
 struct PollData
 {
-   PollData(
-      SOCKET s)
+   explicit PollData(
+      const SOCKET s)
       :  s(s),
          pollInfo{},
          statusBlock{}
    {
    }
+
+   PollData(const PollData &) = delete;
+   PollData(PollData &&) = delete;
+
+   PollData& operator=(const PollData& other) = delete;
+   PollData& operator=(PollData &&) = delete;
 
    ~PollData()
    {
@@ -179,7 +190,7 @@ struct PollData
 };
 
 inline bool SetupPollForSocketEvents(
-   HANDLE hAfD,
+   const HANDLE hAfD,
    PollData &data,
    const ULONG events)
 {
@@ -202,7 +213,7 @@ inline bool SetupPollForSocketEvents(
 
    // kick off the poll
 
-   NTSTATUS status = NtDeviceIoControlFile(
+   const NTSTATUS status = NtDeviceIoControlFile(
       hAfD,
       nullptr,
       nullptr,
@@ -230,7 +241,7 @@ inline bool SetupPollForSocketEvents(
 }
 
 inline PollData *PollForSocketEvents(
-   HANDLE hAfD,
+   const HANDLE hAfD,
    PollData &data,
    const ULONG events)
 {
@@ -282,7 +293,7 @@ inline PollData *PollForSocketEvents(
 }
 
 inline void CancelPoll(
-   HANDLE hAfD,
+   const HANDLE hAfD,
    IO_STATUS_BLOCK *pStatusBlock)
 {
    if (!CancelIoEx(hAfD, reinterpret_cast<LPOVERLAPPED>(pStatusBlock)))
@@ -297,20 +308,20 @@ inline void CancelPoll(
 }
 
 inline void CancelAllPolling(
-   HANDLE hAfD)
+   const HANDLE hAfD)
 {
    CancelPoll(hAfD, nullptr);
 }
 
 inline void CancelPoll(
-   HANDLE hAfD,
+   const HANDLE hAfD,
    PollData &data)
 {
    CancelPoll(hAfD, &data.statusBlock);
 }
 
 inline PollData *GetCompletion(
-   HANDLE hIOCP,
+   const HANDLE hIOCP,
    const DWORD timeout,
    const DWORD expectedResult = ERROR_SUCCESS)
 {
@@ -325,7 +336,9 @@ inline PollData *GetCompletion(
 
    SetLastError(ERROR_SUCCESS);
 
-   const auto result = ::GetQueuedCompletionStatus(hIOCP, &numberOfBytes, &completionKey, &pOverlapped, timeout);
+   const auto result = GetQueuedCompletionStatus(hIOCP, &numberOfBytes, &completionKey, &pOverlapped, timeout);
+
+   (void)result;
 
    const DWORD lastError = GetLastError();
 

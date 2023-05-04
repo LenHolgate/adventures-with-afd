@@ -42,33 +42,33 @@ constexpr DWORD SHORT_TIME_NON_ZERO = 100;
 constexpr DWORD REASONABLE_TIME = 10000;
 
 inline string GetLastErrorMessage(
-   DWORD last_error,
-   bool stripTrailingLineFeed = true)
+   const DWORD last_error,
+   const bool stripTrailingLineFeed = true)
 {
-   CHAR errmsg[512];
+   constexpr int bufferSize = 511;
+
+   CHAR errmsg[bufferSize + 1];
 
    if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-      0,
+      nullptr,
       last_error,
       0,
       errmsg,
       511,
-      NULL))
+      nullptr))
    {
       // if we fail, call ourself to find out why and return that error
 
-      const DWORD thisError = ::GetLastError();
+      const DWORD thisError = GetLastError();
 
       if (thisError != last_error)
       {
          return GetLastErrorMessage(thisError, stripTrailingLineFeed);
       }
-      else
-      {
-         // But don't get into an infinite loop...
 
-         return "Failed to obtain error string";
-      }
+      // But don't get into an infinite loop...
+
+      return "Failed to obtain error string";
    }
 
    if (stripTrailingLineFeed)
@@ -89,7 +89,7 @@ inline string GetLastErrorMessage(
    return errmsg;
 }
 
-inline void ErrorExit(
+[[noreturn]] inline void ErrorExit(
    const std::string_view &message,
    const DWORD lastError)
 {
@@ -100,10 +100,10 @@ inline void ErrorExit(
    throw std::exception("test failed");
 }
 
-inline void ErrorExit(
+[[noreturn]] inline void ErrorExit(
    const std::string_view &message)
 {
-   const DWORD lastError = ::GetLastError();
+   const DWORD lastError = GetLastError();
 
    ErrorExit(message, lastError);
 }
@@ -114,7 +114,7 @@ inline void InitialiseWinsock()
 
    static constexpr WORD wVersionRequested = 0x202;
 
-   if (0 != ::WSAStartup(wVersionRequested, &data))
+   if (0 != WSAStartup(wVersionRequested, &data))
    {
       ErrorExit("WSAStartup");
    }
@@ -122,9 +122,9 @@ inline void InitialiseWinsock()
 
 inline HANDLE CreateIOCP()
 {
-   HANDLE hIOCP = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
+   const HANDLE hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
 
-   if (0 == hIOCP)
+   if (nullptr == hIOCP)
    {
       ErrorExit("CreateIoCompletionPort");
    }
