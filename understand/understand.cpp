@@ -47,10 +47,6 @@ int main(int argc, char **argv) {
   return RUN_ALL_TESTS();
 }
 
-// accept
-// move our socket between afd handles on each call
-// multiple sockets on one handle
-
 TEST(AFDExplore, TestConnectFail)
 {
    static LPCWSTR deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
@@ -951,6 +947,109 @@ TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    EXPECT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
+}
+
+TEST(AFDMultipleAFD, TestDuplicateName)
+{
+   // It seems you can open the same device name multiple times and get different handles
+   // back ...
+   // Using Process Explorer the two \device\Afd handles appear to be unnamed and
+   // at different addresses...
+
+   static LPCWSTR deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
+
+   auto handles1 = CreateAfdAndIOCP(deviceName);
+
+   auto handles2 = CreateAfdAndIOCP(deviceName);
+}
+
+TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
+{
+   // It seems you can open the same device name multiple times and get different handles
+   // back ...
+
+   static LPCWSTR deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
+
+   auto handles1 = CreateAfdAndIOCP(deviceName);
+
+   auto handles2 = CreateAfdAndIOCP(deviceName);
+
+   PollData data(CreateNonBlockingTCPSocket());
+
+   // Associate with 1st afd handle...
+
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles1.afd, data, AllEvents));
+
+   auto listeningSocket = CreateListeningSocket();
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles1.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Nothing on the other IOCP...
+   EXPECT_EQ(nullptr, GetCompletion(handles2.iocp, 0, WAIT_TIMEOUT));
+
+   // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
+   // but we use a different afd handle and IOCP, potentially moving this socket from one thread
+   // to another...
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles2.afd, data, AllEvents));
+
+   pData = GetCompletion(handles2.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // Nothing on the other IOCP...
+   EXPECT_EQ(nullptr, GetCompletion(handles1.iocp, 0, WAIT_TIMEOUT));
+}
+
+TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
+{
+   static LPCWSTR deviceName1 = L"\\Device\\Afd\\explore1";   // Arbitrary name in the Afd namespace
+
+   auto handles1 = CreateAfdAndIOCP(deviceName1);
+
+   static LPCWSTR deviceName2 = L"\\Device\\Afd\\explore2";   // Arbitrary name in the Afd namespace
+
+   auto handles2 = CreateAfdAndIOCP(deviceName2);
+
+   PollData data(CreateNonBlockingTCPSocket());
+
+   // Associate with 1st afd handle...
+
+   EXPECT_EQ(false, SetupPollForSocketEvents(handles1.afd, data, AllEvents));
+
+   auto listeningSocket = CreateListeningSocket();
+
+   ConnectNonBlocking(data.s, listeningSocket.port);
+
+   // connect will complete immediately and report the socket as writable...
+
+   PollData *pData = GetCompletion(handles1.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+
+   // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
+   // but we use a different afd handle and IOCP, potentially moving this socket from one thread
+   // to another...
+
+   EXPECT_EQ(true, SetupPollForSocketEvents(handles2.afd, data, AllEvents));
+
+   pData = GetCompletion(handles2.iocp, 0);
+
+   EXPECT_EQ(pData, &data);
+
+   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
