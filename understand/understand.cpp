@@ -1018,13 +1018,12 @@ TEST_F(AFDUnderstand, TestPollTwiceSameDataDifferentEvents)
 
    Abort(s);
 
-   pData = GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   // this second poll never completes, looks like the polling is set up per socket
+   // rather than per call to poll? Either way this is all way 'off-piste' and we'd
+   // never want or need to do this...
 
-   ASSERT_EQ(pData, &data);
-
-   EXPECT_EQ(AFD_POLL_ABORT, pData->pollInfo.Handles[0].Events);
+   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
 }
-
 
 TEST(AFDMultipleAFD, TestDuplicateName)
 {
@@ -1074,7 +1073,7 @@ TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
    // Nothing on the other IOCP...
    ASSERT_EQ(nullptr, GetCompletion(handles2.iocp, 0, WAIT_TIMEOUT));
 
-   // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
+   // poll again for this socket - no changes, socket stays writable, polling is level triggered...
    // but we use a different afd handle and IOCP, potentially moving this socket from one thread
    // to another...
 
@@ -1118,7 +1117,7 @@ TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
+   // poll again for this socket - no changes, socket stays writable, polling is level triggered...
    // but we use a different afd handle and IOCP, potentially moving this socket from one thread
    // to another...
 
