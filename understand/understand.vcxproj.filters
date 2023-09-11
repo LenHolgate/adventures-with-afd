@@ -18,6 +18,9 @@
     <ClCompile Include="understand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="understand-udp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\shared.h">
@@ -30,6 +33,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\socket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\udp_socket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\tcp_socket.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

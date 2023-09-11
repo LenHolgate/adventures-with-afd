@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "shared/afd.h"
-#include "shared/socket.h"
+#include "shared/tcp_socket.h"
 #include "third_party/GoogleTest/gtest.h"
 
 #include <SDKDDKVer.h>
@@ -223,7 +223,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
-   ReadClientClose(data.s);      // contiues to return 0 
+   ReadClientClose(data.s);      // continues to return 0 
 }
 
 TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
@@ -834,7 +834,7 @@ TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
+   // poll again for this socket - no changes, socket stays writable, polling is level triggered...
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
@@ -844,7 +844,7 @@ TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
+   // poll again for this socket - no changes, socket stays writable, polling is level triggered...
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
@@ -934,7 +934,7 @@ TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   // poll again for this socket - no changes, socket stays wriable, polling is level triggered...
+   // poll again for this socket - no changes, socket stays writable, polling is level triggered...
    // FILE_SKIP_COMPLETION_PORT_ON_SUCCESS means we get the poll information back immediately and
    // nothing is queued to the IOCP
 
@@ -1034,9 +1034,9 @@ TEST(AFDMultipleAFD, TestDuplicateName)
 
    static auto deviceName = L"\\Device\\Afd\\explore";   // Arbitrary name in the Afd namespace
 
-   auto handles1 = CreateAfdAndIOCP(deviceName);
+   const auto handles1 = CreateAfdAndIOCP(deviceName);
 
-   auto handles2 = CreateAfdAndIOCP(deviceName);
+   const auto handles2 = CreateAfdAndIOCP(deviceName);
 
    EXPECT_NE(handles1.afd, handles2.afd);
 }

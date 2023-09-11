@@ -135,12 +135,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="understand-udp.cpp" />
     <ClCompile Include="understand.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\afd.h" />
     <ClInclude Include="..\shared\shared.h" />
     <ClInclude Include="..\shared\socket.h" />
+    <ClInclude Include="..\shared\tcp_socket.h" />
+    <ClInclude Include="..\shared\udp_socket.h" />
     <ClInclude Include="..\third_party\wepoll_magic.h" />
   </ItemGroup>
   <ItemGroup>

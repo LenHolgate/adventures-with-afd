@@ -32,22 +32,9 @@
 #include <string>
 #include <ws2tcpip.h>
 
-inline SOCKET CreateTCPSocket()
+inline SOCKET SetSocketNonBlocking(
+   SOCKET s)
 {
-   const SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-   if (s == INVALID_SOCKET)
-   {
-      ErrorExit("socket");
-   }
-
-   return s;
-}
-
-inline SOCKET CreateNonBlockingTCPSocket()
-{
-   const SOCKET s = CreateTCPSocket();
-
    // Set it as non-blocking
 
    unsigned long one = 1;
@@ -186,66 +173,12 @@ inline void ConnectNonBlocking(
    ConnectNonBlocking(s, addr);
 }
 
-struct ListeningSocket
-{
-   ListeningSocket(
-      const SOCKET s,
-      const USHORT port)
-      :  s(s),
-         port(port)
-   {
-   }
-
-   ListeningSocket(const ListeningSocket &) = delete;
-   ListeningSocket(ListeningSocket &&) = delete;
-
-   ListeningSocket& operator=(const ListeningSocket &) = delete;
-   ListeningSocket& operator=(ListeningSocket &&) = delete;
-
-   [[nodiscard]] SOCKET Accept() const
-   {
-      sockaddr_in addr {};
-
-      int addressLength = sizeof addr;
-
-      const SOCKET accepted = accept(s, reinterpret_cast<sockaddr *>(&addr), &addressLength);
-
-      if (accepted == INVALID_SOCKET)
-      {
-         ErrorExit("accept");
-      }
-
-      // Set it as non-blocking
-
-      unsigned long one = 1;
-
-      if (0 != ioctlsocket(accepted, FIONBIO, &one))
-      {
-         ErrorExit("ioctlsocket");
-      }
-
-      return accepted;
-   }
-
-   ~ListeningSocket()
-   {
-      closesocket(s);
-   }
-
-   SOCKET s;
-
-   USHORT port;
-};
-
-inline ListeningSocket CreateListeningSocket(
-   const int recvBufferSize,
+inline USHORT Bind(
+   SOCKET s,
    sockaddr_in &addr,
+   const int recvBufferSize = -1,
    const USHORT basePort = 5050)
 {
-   bool done = false;
-
-   const SOCKET s = CreateTCPSocket();
-
    if (recvBufferSize != -1)
    {
       SetRecvBuffer(s, recvBufferSize);
@@ -253,6 +186,7 @@ inline ListeningSocket CreateListeningSocket(
 
    USHORT port = basePort;
 
+   bool done = false;
 
    do
    {
@@ -278,53 +212,20 @@ inline ListeningSocket CreateListeningSocket(
    }
    while (!done);
 
-   if (SOCKET_ERROR == listen(s, 10))
-   {
-      ErrorExit("listen");
-   }
-
-   return ListeningSocket(s, port);
+   return port;
 }
 
-inline ListeningSocket CreateListeningSocketWithRecvBufferSpecified(
-   const int recvBufferSize,
+inline USHORT Bind(
+   SOCKET s,
+   const int recvBufferSize = -1,
    const USHORT basePort = 5050)
 {
-   sockaddr_in addr {};
+   sockaddr_in addr{};
 
    addr.sin_family = AF_INET;
-   addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   addr.sin_addr.s_addr = INADDR_ANY;
 
-   return CreateListeningSocket(recvBufferSize, addr, basePort);
-}
-
-inline ListeningSocket CreateListeningSocket(
-   const USHORT basePort = 5050)
-{
-   sockaddr_in addr {};
-
-   addr.sin_family = AF_INET;
-   addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-
-   return CreateListeningSocket(-1, addr, basePort);
-}
-
-inline ListeningSocket CreateListeningSocket(
-   const int recvBufferSize,
-   const std::string_view &address,
-   const USHORT basePort = 5050)
-{
-   sockaddr_in addr {};
-
-   if (SOCKET_ERROR == inet_pton(AF_INET, address.data(), &addr.sin_addr))
-   {
-      ErrorExit("inet_pton");
-   }
-
-   addr.sin_family = AF_INET;
-   addr.sin_port = htons(basePort);
-
-   return CreateListeningSocket(recvBufferSize, addr, basePort);
+   return Bind(s, addr, recvBufferSize, basePort);
 }
 
 inline void ReadClientClose(
@@ -425,7 +326,6 @@ inline int WriteUntilError(
 
    return ret;
 }
-
 
 inline size_t ReadAndDiscardAllAvailable(
    const SOCKET s,
