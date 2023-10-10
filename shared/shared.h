@@ -34,8 +34,6 @@
 #include <iostream>
 #include <string_view>
 
-#include "third_party/GoogleTest/gtest.h"
-
 #pragma comment(lib, "ws2_32.lib")
 
 using std::string;

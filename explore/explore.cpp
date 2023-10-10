@@ -38,6 +38,9 @@
 
 #pragma comment(lib, "ntdll.lib")
 
+using std::cout;
+using std::endl;
+
 int main()
 {
    InitialiseWinsock();
