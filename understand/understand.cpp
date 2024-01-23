@@ -71,7 +71,7 @@ TEST(AFDExplore, TestConnectFail)
 
    // connect is pending, it will eventually time out...
 
-   PollData *pData = GetCompletion(handles.iocp, INFINITE);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, INFINITE);
 
    // the completion returns the PollData which needs to remain valid for the period of the poll
 
@@ -113,7 +113,7 @@ TEST_F(AFDUnderstand, TestConnectCancel)
 
    CancelPoll(handles.afd, data);
 
-   PollData *pData = GetCompletion(handles.iocp, INFINITE, ERROR_OPERATION_ABORTED);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, INFINITE, ERROR_OPERATION_ABORTED);
 
    ASSERT_EQ(pData, &data);
 
@@ -128,7 +128,7 @@ TEST_F(AFDUnderstand, TestConnectCancelAll)
 
    CancelAllPolling(handles.afd);
 
-   PollData *pData = GetCompletion(handles.iocp, INFINITE, ERROR_OPERATION_ABORTED);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, INFINITE, ERROR_OPERATION_ABORTED);
 
    ASSERT_EQ(pData, &data);
 
@@ -145,7 +145,7 @@ TEST_F(AFDUnderstand, TestConnect)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -163,7 +163,7 @@ TEST_F(AFDUnderstand, TestConnect)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -182,7 +182,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -201,7 +201,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -217,7 +217,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -236,7 +236,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -255,7 +255,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -267,7 +267,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -286,7 +286,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -305,7 +305,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -315,7 +315,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -334,7 +334,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -352,7 +352,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -362,7 +362,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -381,7 +381,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -400,7 +400,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -412,7 +412,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -422,7 +422,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -441,7 +441,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -464,7 +464,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -476,7 +476,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -486,7 +486,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -509,7 +509,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -523,7 +523,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -563,7 +563,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
          if (SetupPollForSocketEvents(handles.afd, data, AllEvents))
          {
-            pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+            pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
             ASSERT_EQ(pData, &data);
 
@@ -581,7 +581,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -604,7 +604,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -618,7 +618,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -653,7 +653,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -674,7 +674,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalClose)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -690,7 +690,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalClose)
 
    Close(data.s);
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -711,7 +711,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -730,7 +730,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
       ErrorExit("shutdown");
    }
 
-   pData = GetCompletion(handles.iocp, REASONABLE_TIME);
+   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
    ASSERT_EQ(pData, &data);
 
@@ -751,7 +751,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -772,7 +772,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 
    // No notification from shutting down recv side...
 
-   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
 
    Close(s);
 }
@@ -792,7 +792,7 @@ TEST_F(AFDUnderstand, TestAccept)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &listeningData);
 
@@ -815,7 +815,7 @@ TEST_F(AFDUnderstand, TestAccept)
 
    // No notification from closing accepted socket
 
-   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
 }
 
 TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
@@ -828,7 +828,7 @@ TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -838,7 +838,7 @@ TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -848,7 +848,7 @@ TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -865,7 +865,7 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -877,7 +877,7 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -894,7 +894,7 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    // disconnected...
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -904,7 +904,7 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -928,7 +928,7 @@ TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -944,7 +944,7 @@ TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
-   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, 0, WAIT_TIMEOUT));
 }
 
 TEST_F(AFDUnderstand, TestPollOnceGivesOneCompletion)
@@ -955,15 +955,15 @@ TEST_F(AFDUnderstand, TestPollOnceGivesOneCompletion)
 
    CancelPoll(handles.afd, data);
 
-   PollData *pData = GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, ERROR_OPERATION_ABORTED);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, SHORT_TIME_NON_ZERO, ERROR_OPERATION_ABORTED);
 
    ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(0, pData->pollInfo.Handles[0].Events);
 
-   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, 0, WAIT_TIMEOUT));
 
-   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, 0, WAIT_TIMEOUT));
 }
 
 
@@ -977,19 +977,19 @@ TEST_F(AFDUnderstand, TestPollTwiceSameDataGivesTwoCompletions)
 
    CancelPoll(handles.afd, data);
 
-   PollData *pData = GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, ERROR_OPERATION_ABORTED);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, SHORT_TIME_NON_ZERO, ERROR_OPERATION_ABORTED);
 
    ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(0, pData->pollInfo.Handles[0].Events);
 
-   pData = GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, ERROR_OPERATION_ABORTED);
+   pData = GetCompletionAs<PollData>(handles.iocp, SHORT_TIME_NON_ZERO, ERROR_OPERATION_ABORTED);
 
    ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(0, pData->pollInfo.Handles[0].Events);
 
-   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, 0, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, 0, WAIT_TIMEOUT));
 }
 
 TEST_F(AFDUnderstand, TestPollTwiceSameDataDifferentEvents)
@@ -1004,7 +1004,7 @@ TEST_F(AFDUnderstand, TestPollTwiceSameDataDifferentEvents)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -1012,7 +1012,7 @@ TEST_F(AFDUnderstand, TestPollTwiceSameDataDifferentEvents)
 
    // second poll is for different events...
 
-   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -1022,7 +1022,7 @@ TEST_F(AFDUnderstand, TestPollTwiceSameDataDifferentEvents)
    // rather than per call to poll? Either way this is all way 'off-piste' and we'd
    // never want or need to do this...
 
-   ASSERT_EQ(nullptr, GetCompletion(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
 }
 
 TEST(AFDMultipleAFD, TestDuplicateName)
@@ -1064,14 +1064,14 @@ TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles1.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles1.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Nothing on the other IOCP...
-   ASSERT_EQ(nullptr, GetCompletion(handles2.iocp, 0, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles2.iocp, 0, WAIT_TIMEOUT));
 
    // poll again for this socket - no changes, socket stays writable, polling is level triggered...
    // but we use a different afd handle and IOCP, potentially moving this socket from one thread
@@ -1079,14 +1079,14 @@ TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles2.afd, data, AllEvents));
 
-   pData = GetCompletion(handles2.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles2.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
    EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Nothing on the other IOCP...
-   ASSERT_EQ(nullptr, GetCompletion(handles1.iocp, 0, WAIT_TIMEOUT));
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles1.iocp, 0, WAIT_TIMEOUT));
 }
 
 TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
@@ -1111,7 +1111,7 @@ TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
 
    // connect will complete immediately and report the socket as writable...
 
-   PollData *pData = GetCompletion(handles1.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles1.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -1123,7 +1123,7 @@ TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles2.afd, data, AllEvents));
 
-   pData = GetCompletion(handles2.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles2.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 

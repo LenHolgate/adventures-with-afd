@@ -69,7 +69,7 @@ TEST_F(AFDUnderstandUDP, TestCreate)
 {
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -80,7 +80,7 @@ TEST_F(AFDUnderstandUDP, TestBind)
 {
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -90,7 +90,7 @@ TEST_F(AFDUnderstandUDP, TestBind)
 
    ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
 
-   pData = GetCompletion(handles.iocp, 0);
+   pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
@@ -109,7 +109,7 @@ TEST_F(AFDUnderstandUDP, TestRecv)
 
    SendTo(sendSocket, port, testData);
 
-   PollData *pData = GetCompletion(handles.iocp, 0);
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 

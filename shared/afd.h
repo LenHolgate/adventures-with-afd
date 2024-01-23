@@ -320,7 +320,7 @@ inline void CancelPoll(
    CancelPoll(hAfD, &data.statusBlock);
 }
 
-inline PollData *GetCompletion(
+inline OVERLAPPED *GetCompletion(
    const HANDLE hIOCP,
    const DWORD timeout,
    const DWORD expectedResult = ERROR_SUCCESS)
@@ -347,7 +347,16 @@ inline PollData *GetCompletion(
       ErrorExit("GetQueuedCompletionStatus");
    }
 
-   return reinterpret_cast<PollData *>(pOverlapped);
+   return pOverlapped;
+}
+
+template <typename T>
+inline T *GetCompletionAs(
+   const HANDLE hIOCP,
+   const DWORD timeout,
+   const DWORD expectedResult = ERROR_SUCCESS)
+{
+   return reinterpret_cast<T *>(GetCompletion(hIOCP, timeout, expectedResult));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
