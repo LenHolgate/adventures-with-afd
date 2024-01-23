@@ -186,30 +186,42 @@ struct PollData
    SOCKET s;
    AFD_POLL_INFO pollInfo;
    IO_STATUS_BLOCK statusBlock;
-
 };
 
 inline bool SetupPollForSocketEvents(
    const HANDLE hAfD,
-   PollData &data,
+   void *pInput,
+   const ULONG inputSize,
+   IO_STATUS_BLOCK &statusBlock,
+   SOCKET s,
+   void *pOutput,
+   const ULONG outputSize,
+   void *pContext,
    const ULONG events)
 {
+   if (inputSize < sizeof AFD_POLL_INFO)
+   {
+      ErrorExit("SetupPollForSocketEvents - input too small");
+   }
+
+   memset(pInput, 0, inputSize);
+
    // This is information about what we are interested in for the supplied socket.
    // We're polling for one socket, we are interested in the specified events
    // The other stuff is copied from wepoll - needs more investigation
 
-   AFD_POLL_INFO pollInfoIn {};
+   AFD_POLL_INFO &pollInfoIn = *reinterpret_cast<AFD_POLL_INFO *>(pInput);
 
    pollInfoIn.Exclusive = FALSE;
    pollInfoIn.NumberOfHandles = 1;
    pollInfoIn.Timeout.QuadPart = INT64_MAX;
-   pollInfoIn.Handles[0].Handle = reinterpret_cast<HANDLE>(GetBaseSocket(data.s));
+   pollInfoIn.Handles[0].Handle = reinterpret_cast<HANDLE>(GetBaseSocket(s));
    pollInfoIn.Handles[0].Status = 0;
    pollInfoIn.Handles[0].Events = events;
 
-   data.pollInfo = AFD_POLL_INFO{};
+   memset(pOutput, 0, outputSize);
 
-   data.statusBlock = IO_STATUS_BLOCK{};
+   statusBlock = IO_STATUS_BLOCK{};
 
    // kick off the poll
 
@@ -217,13 +229,13 @@ inline bool SetupPollForSocketEvents(
       hAfD,
       nullptr,
       nullptr,
-      &data,
-      &data.statusBlock,
+      pContext,
+      &statusBlock,
       IOCTL_AFD_POLL,
-      &pollInfoIn,
-      sizeof (AFD_POLL_INFO),
-      &data.pollInfo,
-      sizeof(AFD_POLL_INFO));
+      pInput,
+      inputSize,
+      pOutput,
+      outputSize);
 
    if (status == 0)
    {
@@ -238,6 +250,99 @@ inline bool SetupPollForSocketEvents(
    }
 
    return false;
+}
+
+inline bool SetupPollForSocketEventsX(
+   const HANDLE hAfD,
+   void *pInput,
+   const ULONG inputSize,
+   IO_STATUS_BLOCK &statusBlock,
+   void *pOutput,
+   const ULONG outputSize,
+   void *pContext)
+{
+   if (inputSize < sizeof outputSize)
+   {
+      ErrorExit("SetupPollForSocketEvents - input too small");
+   }
+
+   // kick off the poll
+
+   const NTSTATUS status = NtDeviceIoControlFile(
+      hAfD,
+      nullptr,
+      nullptr,
+      pContext,
+      &statusBlock,
+      IOCTL_AFD_POLL,
+      pInput,
+      inputSize,
+      pOutput,
+      outputSize);
+
+   if (status == 0)
+   {
+      return true;
+   }
+
+   if (status != STATUS_PENDING)
+   {
+      SetLastError(RtlNtStatusToDosError(status));
+
+      ErrorExit("NtDeviceIoControlFile");
+   }
+
+   return false;
+}
+
+inline bool SetupPollForSocketEvents(
+   const HANDLE hAfD,
+   IO_STATUS_BLOCK &statusBlock,
+   SOCKET s,
+   void *pOutput,
+   const ULONG outputSize,
+   void *pContext,
+   const ULONG events)
+{
+   AFD_POLL_INFO pollInfoIn {};
+
+   return SetupPollForSocketEvents(
+      hAfD,
+      &pollInfoIn,
+      sizeof(pollInfoIn),
+      statusBlock,
+      s,
+      pOutput,
+      outputSize,
+      pContext,
+      events);
+}
+
+inline bool SetupPollForSocketEvents(
+   const HANDLE hAfD,
+   IO_STATUS_BLOCK &statusBlock,
+   SOCKET s,
+   AFD_POLL_INFO &pollInfo,
+   void *pContext,
+   const ULONG events)
+{
+   return SetupPollForSocketEvents(
+      hAfD,
+      statusBlock,
+      s,
+      &pollInfo,
+      sizeof(pollInfo),
+      pContext,
+      events);
+}
+
+
+inline bool SetupPollForSocketEvents(
+   const HANDLE hAfD,
+   PollData &data,
+   const ULONG events)
+{
+   return SetupPollForSocketEvents(hAfD, data.statusBlock, data.s, data.pollInfo, &data, events);
 }
 
 inline PollData *PollForSocketEvents(
