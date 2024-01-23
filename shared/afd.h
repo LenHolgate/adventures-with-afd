@@ -33,6 +33,8 @@
 
 #include <winternl.h>
 
+#pragma comment(lib, "ntdll.lib")
+
 struct AfDWithIOCP
 {
    AfDWithIOCP()

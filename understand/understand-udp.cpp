@@ -31,15 +31,6 @@
 #include "shared/udp_socket.h"
 #include "third_party/GoogleTest/gtest.h"
 
-#include <SDKDDKVer.h>
-
-#include <winternl.h>
-
-#include "shared/udp_socket.h"
-
-#pragma comment(lib, "ntdll.lib")
-
-
 class AFDUnderstandUDP : public testing::Test
 {
    public :

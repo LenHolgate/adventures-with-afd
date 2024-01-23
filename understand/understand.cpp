@@ -31,12 +31,6 @@
 #include "shared/tcp_socket.h"
 #include "third_party/GoogleTest/gtest.h"
 
-#include <SDKDDKVer.h>
-
-#include <winternl.h>
-
-#pragma comment(lib, "ntdll.lib")
-
 int main(int argc, char **argv) {
    testing::InitGoogleTest(&argc, argv);
 
