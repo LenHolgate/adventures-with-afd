@@ -725,16 +725,14 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 
    ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
 
-   if (SOCKET_ERROR == shutdown(s, SD_SEND))
+   if (SOCKET_ERROR == shutdown(data.s, SD_SEND))
    {
       ErrorExit("shutdown");
    }
 
-   pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
+   // no notifications for local operations
 
-   ASSERT_EQ(pData, &data);
-
-   EXPECT_EQ(AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
 
    Close(s);
 }
@@ -765,7 +763,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 
    ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
 
-   if (SOCKET_ERROR == shutdown(s, SD_RECEIVE))
+   if (SOCKET_ERROR == shutdown(data.s, SD_RECEIVE))
    {
       ErrorExit("shutdown");
    }
@@ -965,7 +963,6 @@ TEST_F(AFDUnderstand, TestPollOnceGivesOneCompletion)
 
    ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, 0, WAIT_TIMEOUT));
 }
-
 
 TEST_F(AFDUnderstand, TestPollTwiceSameDataGivesTwoCompletions)
 {
