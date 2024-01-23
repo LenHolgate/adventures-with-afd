@@ -1022,6 +1022,40 @@ TEST_F(AFDUnderstand, TestPollTwiceSameDataDifferentEvents)
    ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT));
 }
 
+TEST_F(AFDUnderstand, TestPollForEventsWithDifferentSizedOutputStructureToInputStructureInputSmallerThanOutput)
+{
+   // pollInfoOut is large enough for 10 handle entries in the array...
+
+   BYTE pollInfoOut[sizeof AFD_POLL_INFO + (9 * sizeof AFD_POLL_HANDLE_INFO)];
+
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data.statusBlock, data.s, &pollInfoOut, sizeof(pollInfoOut), &data, AllEvents));
+
+   ConnectNonBlocking(data.s, NonListeningPort);
+
+   CancelPoll(handles.afd, data);
+
+   PollData *pData = GetCompletionAs<PollData>(handles.iocp, SHORT_TIME_NON_ZERO, ERROR_OPERATION_ABORTED);
+
+   ASSERT_EQ(pData, &data);
+
+   EXPECT_EQ(0, pData->pollInfo.Handles[0].Events);
+
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, 0, WAIT_TIMEOUT));
+
+   ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, 0, WAIT_TIMEOUT));
+}
+
+TEST_F(AFDUnderstand, TestPollForEventsWithDifferentSizedOutputStructureToInputStructureOutputSmallerThanInput)
+{
+   // pollInfoIn is large enough for 10 handle entries in the array...
+
+   BYTE pollInfoIn[sizeof AFD_POLL_INFO + (9 * sizeof AFD_POLL_HANDLE_INFO)];
+
+   AFD_POLL_INFO pollInfoOut {};
+
+   EXPECT_THROW(SetupPollForSocketEvents(handles.afd, &pollInfoIn, sizeof(pollInfoIn), data.statusBlock, data.s, &pollInfoOut, sizeof(pollInfoOut), &data, AllEvents), std::exception);
+}
+
 TEST(AFDMultipleAFD, TestDuplicateName)
 {
    // It seems you can open the same device name multiple times and get different handles
