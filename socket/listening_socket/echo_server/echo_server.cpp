@@ -44,7 +44,8 @@ class echo_server : private tcp_listening_socket_callbacks
 
       echo_server(
          afd_handle afd)
-         : s(afd, *this)
+         : s(afd, *this),
+           is_done(false)
       {
       }
 
@@ -70,11 +71,18 @@ class echo_server : private tcp_listening_socket_callbacks
          s.listen(backlog);
       }
 
+      bool done() const
+      {
+         return is_done;
+      }
+
    private :
 
-      void on_incoming_connection(
+      void on_incoming_connections(
          tcp_listening_socket &s) override
       {
+         std::cout << "on_incoming_connections" << std::endl;
+
          bool accepting = true;
 
          while (accepting)
@@ -85,10 +93,12 @@ class echo_server : private tcp_listening_socket_callbacks
 
             SOCKET client_socket = s.accept(reinterpret_cast<sockaddr &>(client_address), client_address_length);
 
-            accepting = (client_socket != (client_socket != -1));
+            accepting = (client_socket != INVALID_SOCKET);
 
             if (accepting)
             {
+               std::cout << "new connection accepted" << std::endl;
+
                static const char *pMessage = "TODO\r\n";
 
                ::send(client_socket, pMessage, 6, 0);
@@ -101,7 +111,29 @@ class echo_server : private tcp_listening_socket_callbacks
          }
       }
 
+      void on_connection_reset(
+         tcp_listening_socket &s) override
+      {
+         std::cout << "on_connection_reset" << std::endl;
+
+         s.close();
+
+         is_done = true;
+      }
+
+      void on_disconnected(
+         tcp_listening_socket &s) override
+      {
+         std::cout << "on_disconnected" << std::endl;
+
+         (void)s;
+
+         is_done = true;
+      }
+
       tcp_listening_socket s;
+
+      bool is_done;
 
       BYTE recv_buffer[100];
 };
@@ -130,7 +162,7 @@ int main(int argc, char **argv)
 
       server.listen(reinterpret_cast<const sockaddr &>(address), sizeof address, backlog);
 
-      for (;;)
+      while (!server.done())
       {
          // process events
 

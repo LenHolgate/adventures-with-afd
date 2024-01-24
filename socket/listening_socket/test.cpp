@@ -54,7 +54,9 @@ class mock_tcp_listening_socket_callbacks : public tcp_listening_socket_callback
 {
    public :
 
-   MOCK_METHOD(void, on_incoming_connection, (tcp_listening_socket &), (override));
+   MOCK_METHOD(void, on_incoming_connections, (tcp_listening_socket &), (override));
+   MOCK_METHOD(void, on_connection_reset, (tcp_listening_socket &), (override));
+   MOCK_METHOD(void, on_disconnected, (tcp_listening_socket &), (override));
 };
 
 TEST(AFDListeningSocket, TestConstruct)
@@ -263,7 +265,7 @@ TEST(AFDListeningSocket, TestIncomingConnection)
 
    ::connect(s, &reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   EXPECT_CALL(callbacks, on_incoming_connection(::testing::_)).Times(1);
+   EXPECT_CALL(callbacks, on_incoming_connections(::testing::_)).Times(1);
 
    auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
@@ -298,7 +300,7 @@ TEST(AFDListeningSocket, TestAccept)
 
    ::connect(s, &reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   EXPECT_CALL(callbacks, on_incoming_connection(::testing::_)).Times(1);
+   EXPECT_CALL(callbacks, on_incoming_connections(::testing::_)).Times(1);
 
    auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 

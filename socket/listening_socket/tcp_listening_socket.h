@@ -36,30 +36,14 @@ class tcp_listening_socket_callbacks
 {
    public :
 
-      virtual void on_incoming_connection(
+      virtual void on_incoming_connections(
          tcp_listening_socket &s) = 0;
 
-      //virtual void on_connection_failed(
-      //   tcp_socket &s,
-      //   DWORD error) = 0;
+      virtual void on_connection_reset(
+         tcp_listening_socket &s) = 0;
 
-      //virtual void on_readable(
-      //   tcp_socket &s) = 0;
-
-      //virtual void on_readable_oob(
-      //   tcp_socket &s) = 0;
-
-      //virtual void on_writable(
-      //   tcp_socket &s) = 0;
-
-      //virtual void on_client_close(
-      //   tcp_socket &s) = 0;
-
-      //virtual void on_connection_reset(
-      //   tcp_socket &s) = 0;
-
-      //virtual void on_disconnected(
-      //   tcp_socket &s) = 0;
+      virtual void on_disconnected(
+         tcp_listening_socket &s) = 0;
 
    protected :
 

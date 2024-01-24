@@ -155,56 +155,31 @@ ULONG tcp_listening_socket::handle_events(
    const ULONG eventsToHandle,
    const NTSTATUS status)
 {
-   // need to know what state we're in as we would do one thing for connect and other things when
-   // connected?
-
-   (void)eventsToHandle;
    (void)status;
 
    if (connection_state == state::listening)
    {
       if (AFD_POLL_ACCEPT & eventsToHandle)
       {
-         callbacks.on_incoming_connection(*this);
-
-         afd.poll(events);
+         callbacks.on_incoming_connections(*this);
       }
    }
-   //else if (AFD_POLL_SEND & eventsToHandle)
-   //{
-   //   callbacks.on_writable(*this);
-   //}
 
-   //if (AFD_POLL_RECEIVE & eventsToHandle)
-   //{
-   //   callbacks.on_readable(*this);
-   //}
+   if (AFD_POLL_ABORT & eventsToHandle)
+   {
+      connection_state = state::disconnected;
 
-   //if (AFD_POLL_RECEIVE_EXPEDITED & eventsToHandle)
-   //{
-   //   callbacks.on_readable_oob(*this);
-   //}
+      callbacks.on_connection_reset(*this);
+   }
 
-   //if (AFD_POLL_ABORT & eventsToHandle)
-   //{
-   //   connection_state = state::disconnected;
+   if (AFD_POLL_LOCAL_CLOSE & eventsToHandle)
+   {
+      connection_state = state::disconnected;
 
-   //   callbacks.on_connection_reset(*this);
-   //}
+      callbacks.on_disconnected(*this);
+   }
 
-   //if (AFD_POLL_DISCONNECT & eventsToHandle)
-   //{
-   //   connection_state = state::disconnected;
-
-   //   callbacks.on_client_close(*this);
-   //}
-
-   //if (AFD_POLL_LOCAL_CLOSE & eventsToHandle)
-   //{
-   //   connection_state = state::disconnected;
-
-   //   callbacks.on_disconnected(*this);
-   //}
+   afd.poll(events);
 
    return events;
 }
