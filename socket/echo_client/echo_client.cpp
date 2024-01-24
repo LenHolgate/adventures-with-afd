@@ -30,11 +30,11 @@
 
 #include <WinSock2.h>
 
-#include "../shared/afd.h"
+#include "shared/afd.h"
 
-#include "../tcp_socket.h"
-#include "../afd_system.h"
-#include "../afd_handle.h"
+#include "tcp_socket.h"
+#include "afd_system.h"
+#include "afd_handle.h"
 
 class echo_client : private tcp_socket_callbacks
 {
