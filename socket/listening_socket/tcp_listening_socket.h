@@ -89,6 +89,10 @@ class tcp_listening_socket : private afd_events
       void listen(
          int backlog);
 
+      SOCKET accept(
+         sockaddr &address,
+         int &address_length);
+
       void close();
 
    private :

@@ -237,7 +237,7 @@ TEST(AFDListeningSocket, TestListenBeforeBind)
    EXPECT_THROW(socket.listen(10), std::exception);
 }
 
-TEST(AFDListeningSocket, TestAccept)
+TEST(AFDListeningSocket, TestIncomingConnection)
 {
    const auto port = GetAvailablePort();
 
@@ -270,6 +270,49 @@ TEST(AFDListeningSocket, TestAccept)
    pAfd->handle_events();
 
    ::closesocket(s);
+}
+
+TEST(AFDListeningSocket, TestAccept)
+{
+   const auto port = GetAvailablePort();
+
+   const auto handles = CreateAfdAndIOCP();
+
+   afd_system afd(handles.afd);
+
+   afd_handle handle(afd, 0);
+
+   sockaddr_in address {};
+
+   address.sin_family = AF_INET;
+   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   address.sin_port = htons(port);
+
+   mock_tcp_listening_socket_callbacks callbacks;
+
+   tcp_listening_socket socket(handle, reinterpret_cast<const sockaddr &>(address), sizeof(address), callbacks);
+
+   socket.listen(10);
+
+   auto s = CreateTCPSocket();
+
+   ::connect(s, &reinterpret_cast<const sockaddr &>(address), sizeof(address));
+
+   EXPECT_CALL(callbacks, on_incoming_connection(::testing::_)).Times(1);
+
+   auto *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+
+   pAfd->handle_events();
+
+   sockaddr_in client_address {};
+
+   int client_address_length = sizeof client_address;
+
+   SOCKET client_socket = socket.accept(reinterpret_cast<sockaddr &>(client_address), client_address_length);
+
+   ::closesocket(s);
+
+   ::closesocket(client_socket);
 }
 
 TEST(AFDListeningSocket, TestClose)

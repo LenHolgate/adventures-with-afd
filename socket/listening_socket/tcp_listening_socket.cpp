@@ -122,6 +122,20 @@ void tcp_listening_socket::listen(
    afd.poll(events);
 }
 
+SOCKET tcp_listening_socket::accept(
+   sockaddr &address,
+   int &address_length)
+{
+   const SOCKET accepted = ::accept(s, &address, &address_length);
+
+   if (accepted == INVALID_SOCKET)
+   {
+      throw std::exception("failed to accept");
+   }
+
+   return accepted;
+}
+
 void tcp_listening_socket::close()
 {
    if (s != INVALID_SOCKET)
