@@ -128,11 +128,6 @@ SOCKET tcp_listening_socket::accept(
 {
    const SOCKET accepted = ::accept(s, &address, &address_length);
 
-   if (accepted == INVALID_SOCKET)
-   {
-      throw std::exception("failed to accept");
-   }
-
    return accepted;
 }
 
@@ -163,8 +158,6 @@ ULONG tcp_listening_socket::handle_events(
    // need to know what state we're in as we would do one thing for connect and other things when
    // connected?
 
-   events = 0;
-
    (void)eventsToHandle;
    (void)status;
 
@@ -173,6 +166,8 @@ ULONG tcp_listening_socket::handle_events(
       if (AFD_POLL_ACCEPT & eventsToHandle)
       {
          callbacks.on_incoming_connection(*this);
+
+         afd.poll(events);
       }
    }
    //else if (AFD_POLL_SEND & eventsToHandle)

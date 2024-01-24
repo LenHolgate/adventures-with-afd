@@ -75,15 +75,30 @@ class echo_server : private tcp_listening_socket_callbacks
       void on_incoming_connection(
          tcp_listening_socket &s) override
       {
-         sockaddr_in client_address {};
+         bool accepting = true;
 
-         int client_address_length = sizeof client_address;
+         while (accepting)
+         {
+            sockaddr_in client_address{};
 
-         SOCKET client_socket = s.accept(reinterpret_cast<sockaddr &>(client_address), client_address_length);
+            int client_address_length = sizeof client_address;
 
-         // this is where we need to support multiple sockets in the afd system...
+            SOCKET client_socket = s.accept(reinterpret_cast<sockaddr &>(client_address), client_address_length);
 
-         ::closesocket(client_socket);
+            accepting = (client_socket != (client_socket != -1));
+
+            if (accepting)
+            {
+               static const char *pMessage = "TODO\r\n";
+
+               ::send(client_socket, pMessage, 6, 0);
+
+               // this is where we need to support multiple sockets in the afd system...
+
+               ::shutdown(client_socket, SD_SEND);
+               ::closesocket(client_socket);
+            }
+         }
       }
 
       tcp_listening_socket s;

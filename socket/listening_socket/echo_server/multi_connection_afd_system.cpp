@@ -138,7 +138,7 @@ bool multi_connection_afd_system::poll(
       statusBlock,
       pPollInfoOut,
       poll_info_size,
-      this);
+      static_cast<afd_system_events *>(this));
 }
 
 void multi_connection_afd_system::handle_events()
