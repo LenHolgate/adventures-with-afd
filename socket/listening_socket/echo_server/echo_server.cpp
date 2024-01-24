@@ -33,7 +33,7 @@
 #include "shared/afd.h"
 
 #include "tcp_socket.h"
-#include "afd_system.h"
+#include "multi_connection_afd_system.h"
 #include "afd_handle.h"
 
 #include "tcp_listening_socket.h"
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
    {
       const auto handles = CreateAfdAndIOCP();
 
-      afd_system afd(handles.afd);
+      multi_connection_afd_system afd(handles.afd);
 
       afd_handle handle(afd, 0);
 
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
       {
          // process events
 
-         afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, INFINITE);
+         auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, INFINITE);
 
          if (pAfd)
          {

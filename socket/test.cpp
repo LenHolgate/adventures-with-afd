@@ -37,7 +37,7 @@
 #include <winternl.h>
 
 #include "tcp_socket.h"
-#include "afd_system.h"
+#include "single_connection_afd_system.h"
 
 #pragma comment(lib, "ntdll.lib")
 
@@ -67,7 +67,7 @@ TEST(AFDSocket, TestConstruct)
 {
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -80,7 +80,7 @@ TEST(AFDSocket, TestConnectFail)
 {
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -97,7 +97,7 @@ TEST(AFDSocket, TestConnectFail)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, INFINITE);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, INFINITE);
 
    EXPECT_CALL(callbacks, on_connection_failed(::testing::_, ::testing::_)).Times(1);
 
@@ -110,7 +110,7 @@ TEST(AFDSocket, TestConnect)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -126,7 +126,7 @@ TEST(AFDSocket, TestConnect)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -139,7 +139,7 @@ TEST(AFDSocket, TestConnectAndSend)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -155,7 +155,7 @@ TEST(AFDSocket, TestConnectAndSend)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -172,7 +172,7 @@ TEST(AFDSocket, TestConnectAndRecv)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -188,7 +188,7 @@ TEST(AFDSocket, TestConnectAndRecv)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -212,7 +212,7 @@ TEST(AFDSocket, TestConnectAndRecv)
 
    Write(s, testData);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
@@ -235,7 +235,7 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithNoPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -251,7 +251,7 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -261,7 +261,7 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithNoPollPending)
 
    socket.close();
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -272,7 +272,7 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -288,7 +288,7 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -304,7 +304,7 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithPollPending)
 
    socket.close();
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_disconnected(::testing::_)).Times(1);
 
@@ -317,7 +317,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendNoPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -333,7 +333,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -341,7 +341,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendNoPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::send);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -352,7 +352,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendWithPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -368,7 +368,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -386,7 +386,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendWithPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::send);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -397,7 +397,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvNoPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -413,7 +413,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -423,7 +423,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvNoPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::receive);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -434,7 +434,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvWithPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -450,7 +450,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -468,7 +468,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvWithPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::receive);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -479,7 +479,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothNoPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -495,7 +495,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -505,7 +505,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothNoPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::both);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -516,7 +516,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothWithPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -532,7 +532,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -550,7 +550,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothWithPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::both);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -561,7 +561,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseNoPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -577,7 +577,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -587,7 +587,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseNoPollPending)
 
    Close(s);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -598,7 +598,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -614,7 +614,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -632,7 +632,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithPollPending)
 
    Close(s);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
@@ -645,7 +645,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDetectsOnNextRead)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -661,7 +661,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDetectsOnNextRead)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -671,7 +671,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDetectsOnNextRead)
 
    Close(s);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 
@@ -683,7 +683,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDetectsOnNextRead)
 
    EXPECT_EQ(available, 0);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
@@ -696,7 +696,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDoesNotDetectOnNextWri
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -712,7 +712,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDoesNotDetectOnNextWri
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -722,7 +722,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDoesNotDetectOnNextWri
 
    Close(s);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 
@@ -732,7 +732,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDoesNotDetectOnNextWri
 
    EXPECT_EQ(sent, sizeof data);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -743,7 +743,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetNoPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -759,7 +759,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -769,7 +769,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetNoPollPending)
 
    Abort(s);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -780,7 +780,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -796,7 +796,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -814,7 +814,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithPollPending)
 
    Abort(s);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connection_reset(::testing::_)).Times(1);
 
@@ -827,7 +827,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextRead)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -843,7 +843,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextRead)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -853,7 +853,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextRead)
 
    Abort(s);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 
@@ -865,7 +865,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextRead)
 
    EXPECT_EQ(available, 0);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connection_reset(::testing::_)).Times(1);
 
@@ -878,7 +878,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextWrite)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -894,7 +894,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextWrite)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -904,7 +904,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextWrite)
 
    Abort(s);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 
@@ -914,7 +914,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextWrite)
 
    EXPECT_EQ(sent, 0);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_writable(::testing::_)).Times(1);
    EXPECT_CALL(callbacks, on_connection_reset(::testing::_)).Times(1);
@@ -928,7 +928,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendNoPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -944,7 +944,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -954,7 +954,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendNoPollPending)
 
    shutdown(s, SD_SEND);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -965,7 +965,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -981,7 +981,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -999,7 +999,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithPollPending)
 
    shutdown(s, SD_SEND);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
@@ -1012,7 +1012,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDetectsOnNextRe
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -1028,7 +1028,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDetectsOnNextRe
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -1038,7 +1038,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDetectsOnNextRe
 
    shutdown(s, SD_SEND);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 
@@ -1052,7 +1052,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDetectsOnNextRe
 
    EXPECT_EQ(available, 0);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
@@ -1065,7 +1065,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDoesNotDetectOn
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -1081,7 +1081,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDoesNotDetectOn
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -1091,7 +1091,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDoesNotDetectOn
 
    shutdown(s, SD_SEND);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 
@@ -1101,7 +1101,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDoesNotDetectOn
 
    EXPECT_EQ(sent, sizeof data);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -1112,7 +1112,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvNoPollPending)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -1128,7 +1128,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -1138,7 +1138,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvNoPollPending)
 
    shutdown(s, SD_RECEIVE);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -1149,7 +1149,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvWithPollPendingDetectsNothing)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -1165,7 +1165,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvWithPollPendingDetectsNothing)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -1183,7 +1183,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvWithPollPendingDetectsNothing)
 
    shutdown(s, SD_RECEIVE);
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pAfd, nullptr);
 }
@@ -1193,7 +1193,7 @@ TEST(AFDSocket, TestConnectNoContiguousHandleArray)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 1);
 
@@ -1216,7 +1216,7 @@ TEST(AFDSocket, TestConnectMultipleSocketsOnSingleAfdObject)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    mock_tcp_socket_callbacks callbacks;
 
@@ -1232,7 +1232,7 @@ TEST(AFDSocket, TestConnectMultipleSocketsOnSingleAfdObject)
 
    socket1.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   afd_system *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -1240,7 +1240,7 @@ TEST(AFDSocket, TestConnectMultipleSocketsOnSingleAfdObject)
 
    socket2.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    GTEST_SKIP();
    // This fails until we adjust the afd_object to correctly map input handles to the output structure

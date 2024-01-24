@@ -1,6 +1,6 @@
 #pragma once
 ///////////////////////////////////////////////////////////////////////////////
-// File: afd_system.h
+// File: multi_connection_afd_system.h
 ///////////////////////////////////////////////////////////////////////////////
 //
 // The code in this file is released under the The MIT License (MIT)
@@ -31,40 +31,46 @@
 
 #include <WinSock2.h>
 
-#include "../shared/afd.h"
+#include "shared/afd.h"
 
-class afd_system_events
+#include "afd_system.h"
+
+class afd_events;
+
+class multi_connection_afd_system : public afd_system, afd_system_events
 {
    public :
 
-      virtual void handle_events() = 0;
+      explicit multi_connection_afd_system(
+         HANDLE hAfd,
+         int num_slots = 1);
 
-   protected :
-
-      virtual ~afd_system_events() = default;
-};
-
-class afd_system
-{
-   public :
-
-      virtual void associate_socket(
+      void associate_socket(
          ULONG slot,
          SOCKET s,
-         afd_events &events) = 0;
+         afd_events &events) override;
 
-      virtual void disassociate_socket(
-         ULONG slot) = 0;
+      void disassociate_socket(
+         ULONG slot) override;
 
-      virtual bool poll(
+      bool poll(
          ULONG slot,
-         ULONG events) = 0;
+         ULONG events) override;
 
-   protected :
+      void handle_events() override;
 
-      virtual ~afd_system() = default;
+   private :
+
+      HANDLE hAfd;
+      const ULONG num_slots;
+      const ULONG poll_info_size;
+      AFD_POLL_INFO *pPollInfoIn;
+      AFD_POLL_INFO *pPollInfoOut;
+      IO_STATUS_BLOCK statusBlock;
+
+      afd_events **ppEvents;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// End of file: afd_system.h
+// End of file: multi_connection_afd_system.h
 ///////////////////////////////////////////////////////////////////////////////

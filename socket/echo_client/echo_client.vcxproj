@@ -136,7 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\afd_handle.cpp" />
-    <ClCompile Include="..\afd_system.cpp" />
+    <ClCompile Include="..\single_connection_afd_system.cpp" />
     <ClCompile Include="..\tcp_socket.cpp" />
     <ClCompile Include="echo_client.cpp" />
   </ItemGroup>
@@ -146,6 +146,7 @@
     <ClInclude Include="..\..\third_party\wepoll_magic.h" />
     <ClInclude Include="..\afd_handle.h" />
     <ClInclude Include="..\afd_system.h" />
+    <ClInclude Include="..\single_connection_afd_system.h" />
     <ClInclude Include="..\tcp_socket.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

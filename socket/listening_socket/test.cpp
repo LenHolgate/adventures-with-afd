@@ -38,7 +38,7 @@
 
 #include "tcp_listening_socket.h"
 #include "tcp_socket.h"
-#include "afd_system.h"
+#include "single_connection_afd_system.h"
 
 #pragma comment(lib, "ntdll.lib")
 
@@ -61,7 +61,7 @@ TEST(AFDListeningSocket, TestConstruct)
 {
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -76,7 +76,7 @@ TEST(AFDListeningSocket, TestConstructWithAddress)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -95,7 +95,7 @@ TEST(AFDListeningSocket, TestConstructWithInvalidAddress)
 {
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -116,7 +116,7 @@ TEST(AFDListeningSocket, TestConstructWithAddressInUse)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -136,7 +136,7 @@ TEST(AFDListeningSocket, TestBind)
 {
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -159,7 +159,7 @@ TEST(AFDListeningSocket, TestBindWithInvalidAddress)
 {
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -180,7 +180,7 @@ TEST(AFDListeningSocket, TestBindWithAddressInUse)
 {
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -205,7 +205,7 @@ TEST(AFDListeningSocket, TestListen)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -226,7 +226,7 @@ TEST(AFDListeningSocket, TestListenBeforeBind)
 {
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -243,7 +243,7 @@ TEST(AFDListeningSocket, TestIncomingConnection)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -265,7 +265,7 @@ TEST(AFDListeningSocket, TestIncomingConnection)
 
    EXPECT_CALL(callbacks, on_incoming_connection(::testing::_)).Times(1);
 
-   auto *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    pAfd->handle_events();
 
@@ -278,7 +278,7 @@ TEST(AFDListeningSocket, TestAccept)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 
@@ -300,7 +300,7 @@ TEST(AFDListeningSocket, TestAccept)
 
    EXPECT_CALL(callbacks, on_incoming_connection(::testing::_)).Times(1);
 
-   auto *pAfd = GetCompletionAs<afd_system>(handles.iocp, SHORT_TIME_NON_ZERO);
+   auto *pAfd = GetCompletionAs<afd_system_events>(handles.iocp, SHORT_TIME_NON_ZERO);
 
    pAfd->handle_events();
 
@@ -321,7 +321,7 @@ TEST(AFDListeningSocket, TestClose)
 
    const auto handles = CreateAfdAndIOCP();
 
-   afd_system afd(handles.afd);
+   single_connection_afd_system afd(handles.afd);
 
    afd_handle handle(afd, 0);
 

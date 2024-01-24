@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// File: afd_system.cpp
+// File: multi_connection_afd_system.cpp
 ///////////////////////////////////////////////////////////////////////////////
 //
 // The code in this file is released under the The MIT License (MIT)
@@ -31,7 +31,7 @@
 #include <WinSock2.h>
 
 #include "afd_handle.h"
-#include "afd_system.h"
+#include "multi_connection_afd_system.h"
 #include "afd_events.h"
 
 #include "../shared/afd.h"
@@ -47,7 +47,7 @@ static ULONG validate_slots(
    return slots;
 }
 
-afd_system::afd_system(
+multi_connection_afd_system::multi_connection_afd_system(
    HANDLE hAfd,
    const int num_slots)
    : hAfd(hAfd),
@@ -66,7 +66,7 @@ afd_system::afd_system(
    pPollInfoIn->Timeout.QuadPart = INT64_MAX;
 }
 
-void afd_system::associate_socket(
+void multi_connection_afd_system::associate_socket(
    ULONG slot,
    SOCKET s,
    afd_events &events)
@@ -89,7 +89,7 @@ void afd_system::associate_socket(
    pPollInfoIn->NumberOfHandles = slot + 1;
 }
 
-void afd_system::disassociate_socket(
+void multi_connection_afd_system::disassociate_socket(
    ULONG slot)
 {
    if (slot > num_slots)
@@ -104,7 +104,7 @@ void afd_system::disassociate_socket(
    ppEvents[slot] = nullptr;
 }
 
-bool afd_system::poll(
+bool multi_connection_afd_system::poll(
    ULONG slot,
    ULONG events)
 {
@@ -141,7 +141,7 @@ bool afd_system::poll(
       this);
 }
 
-void afd_system::handle_events()
+void multi_connection_afd_system::handle_events()
 {
    // lock
    // iterate the active handles
@@ -166,5 +166,5 @@ void afd_system::handle_events()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// End of file: afd_system.cpp
+// End of file: multi_connection_afd_system.cpp
 ///////////////////////////////////////////////////////////////////////////////

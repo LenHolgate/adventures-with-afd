@@ -27,7 +27,7 @@
     <ClCompile Include="..\..\afd_handle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\afd_system.cpp">
+    <ClCompile Include="multi_connection_afd_system.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -48,6 +48,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\afd_handle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="multi_connection_afd_system.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\afd_system.h">
