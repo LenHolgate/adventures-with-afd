@@ -159,6 +159,14 @@ inline ListeningSocket CreateListeningSocket(
    return CreateListeningSocket(addr, recvBufferSize, basePort);
 }
 
+inline USHORT GetAvailablePort(
+   const USHORT basePort = 5050)
+{
+   auto s = CreateListeningSocket(basePort);
+
+   return s.port;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // End of file: tcp_socket.h
 ///////////////////////////////////////////////////////////////////////////////
