@@ -215,11 +215,6 @@ int tcp_socket::read(
 
 void tcp_socket::close()
 {
-   if (connection_state != state::connected)
-   {
-      throw std::exception("not connected");
-   }
-
    // two options here, one is to always have a poll pending for close/reset events
    // the second is to only report those if we have a read or write poll pending
    // only polling when we need to is likely more efficient but makes the reporting
@@ -234,16 +229,21 @@ void tcp_socket::close()
    // the socket api on the same thread, which we don't get from the polled
    // situation
 
-   const bool triggerCallback = (events == 0);
-
-   if (SOCKET_ERROR == closesocket(s))
+   if (s != INVALID_SOCKET)
    {
-      throw std::exception("failed to close");
-   }
+      const bool triggerCallback = (events == 0);
 
-   if (triggerCallback)
-   {
-      handle_events(AFD_POLL_LOCAL_CLOSE, 0);
+      if (SOCKET_ERROR == closesocket(s))
+      {
+         throw std::exception("failed to close");
+      }
+
+      s = INVALID_SOCKET;
+
+      if (triggerCallback)
+      {
+         handle_events(AFD_POLL_LOCAL_CLOSE, 0);
+      }
    }
 }
 

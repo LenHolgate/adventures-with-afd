@@ -70,7 +70,7 @@ class tcp_socket : private afd_events
 {
    public:
 
-      explicit tcp_socket(
+      tcp_socket(
          afd_handle afd,
          tcp_socket_callbacks &callbacks);
 
