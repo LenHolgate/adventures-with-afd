@@ -170,6 +170,8 @@ ULONG tcp_listening_socket::handle_events(
       connection_state = state::disconnected;
 
       callbacks.on_connection_reset(*this);
+
+      events = 0;
    }
 
    if (AFD_POLL_LOCAL_CLOSE & eventsToHandle)
@@ -177,9 +179,14 @@ ULONG tcp_listening_socket::handle_events(
       connection_state = state::disconnected;
 
       callbacks.on_disconnected(*this);
+
+      events = 0;
    }
 
-   afd.poll(events);
+   if(events)
+   {
+      afd.poll(events);
+   }
 
    return events;
 }
