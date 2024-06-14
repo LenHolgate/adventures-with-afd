@@ -8,4 +8,5 @@ Inspired by https://2023.notgull.net/device-afd/
 Based on code found in:
  * https://github.com/piscisaureus/wepoll
  * https://github.com/smol-rs/polling
+ * https://github.com/c-ares/c-ares/blob/main/src/lib/ares_event_win32.c
 
