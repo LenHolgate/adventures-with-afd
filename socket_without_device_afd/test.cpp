@@ -1079,6 +1079,109 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvWithPollPendingDetectsNothing)
    EXPECT_EQ(pSocket, nullptr);
 }
 
+TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
+{
+   const auto listeningSocket = CreateListeningSocket();
+
+   const auto iocp = CreateIOCP();
+
+   mock_tcp_socket_callbacks callbacks;
+
+   tcp_socket socket1(iocp, callbacks);
+
+   tcp_socket socket2(iocp, callbacks);
+
+   sockaddr_in address {};
+
+   address.sin_family = AF_INET;
+   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   address.sin_port = htons(listeningSocket.port);
+
+   socket1.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
+
+   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   //EXPECT_EQ(pSocket, &socket1);
+
+   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
+
+   pSocket->handle_events();
+
+   BYTE buffer[100];
+
+   int buffer_length = sizeof buffer;
+
+   int available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+   // Note that at present the remote end hasn't accepted
+
+   const SOCKET s1 = listeningSocket.Accept();
+
+   // accepted...
+
+   socket2.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
+
+   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   //EXPECT_EQ(pSocket, &socket2);
+
+   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
+
+   pSocket->handle_events();
+
+   const SOCKET s2 = listeningSocket.Accept();
+
+   const std::string testData("test");
+
+   Write(s1, testData);
+
+   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
+
+   pSocket->handle_events();
+
+   available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, testData.length());
+
+   EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
+
+   available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+   available = socket2.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+
+   Write(s2, testData);
+
+   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
+
+   pSocket->handle_events();
+
+   available = socket2.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, testData.length());
+
+   EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
+
+   available = socket2.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+
+   available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // End of file: test.cpp
 ///////////////////////////////////////////////////////////////////////////////
