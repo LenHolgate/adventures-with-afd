@@ -62,7 +62,18 @@ static SOCKET CreateNonBlockingSocket()
 tcp_socket::tcp_socket(
    HANDLE iocp,
    tcp_socket_callbacks &callbacks)
-   :  s(CreateNonBlockingSocket()),
+   : tcp_socket(
+      iocp,
+      CreateNonBlockingSocket(),
+      callbacks)
+{
+}
+
+tcp_socket::tcp_socket(
+   HANDLE iocp,
+   SOCKET s,
+   tcp_socket_callbacks &callbacks)
+   :  s(s),
       baseSocket(GetBaseSocket(s)),
       pollInfoIn{},
       pollInfoOut{},
@@ -89,7 +100,6 @@ tcp_socket::tcp_socket(
    pollInfoIn.Handles[0].Handle = reinterpret_cast<HANDLE>(baseSocket);
    pollInfoIn.Handles[0].Status = 0;
    pollInfoIn.Handles[0].Events = events;
-
 }
 
 tcp_socket::~tcp_socket()
@@ -137,6 +147,22 @@ void tcp_socket::connect(
             AFD_POLL_ABORT |                    // closed
             AFD_POLL_LOCAL_CLOSE |              // we have closed
             AFD_POLL_CONNECT_FAIL;              // outbound connection failed
+
+   poll(events);
+}
+
+void tcp_socket::accepted()
+{
+   if (connection_state != state::created)
+   {
+      throw std::exception("already accepted");
+   }
+
+   connection_state = state::connected;
+
+   callbacks.on_connected(*this);
+
+   events = AllEvents;
 
    poll(events);
 }

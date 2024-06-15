@@ -1,6 +1,6 @@
 #pragma once
 ///////////////////////////////////////////////////////////////////////////////
-// File: tcp_socket.h
+// File: tcp_listening_socket.h
 ///////////////////////////////////////////////////////////////////////////////
 //
 // The code in this file is released under the The MIT License (MIT)
@@ -30,81 +30,56 @@
 #include "afd_events.h"
 
 class tcp_socket;
+class tcp_socket_callbacks;
+class tcp_listening_socket;
 
-class tcp_socket_callbacks
+class tcp_listening_socket_callbacks
 {
    public :
 
-      virtual void on_connected(
-         tcp_socket &s) = 0;
-
-      virtual void on_connection_failed(
-         tcp_socket &s,
-         DWORD error) = 0;
-
-      virtual void on_readable(
-         tcp_socket &s) = 0;
-
-      virtual void on_readable_oob(
-         tcp_socket &s) = 0;
-
-      virtual void on_writable(
-         tcp_socket &s) = 0;
-
-      virtual void on_client_close(
-         tcp_socket &s) = 0;
+      virtual void on_incoming_connections(
+         tcp_listening_socket &s) = 0;
 
       virtual void on_connection_reset(
-         tcp_socket &s) = 0;
+         tcp_listening_socket &s) = 0;
 
       virtual void on_disconnected(
-         tcp_socket &s) = 0;
+         tcp_listening_socket &s) = 0;
 
    protected :
 
-      virtual ~tcp_socket_callbacks() = default;
+      virtual ~tcp_listening_socket_callbacks() = default;
 };
 
-class tcp_socket : public afd_events
+class tcp_listening_socket : private afd_events
 {
    public:
 
-      tcp_socket(
+      tcp_listening_socket(
          HANDLE iocp,
-         tcp_socket_callbacks &callbacks);
+         tcp_listening_socket_callbacks &callbacks);
 
-      tcp_socket(
+      tcp_listening_socket(
          HANDLE iocp,
-         SOCKET s,
-         tcp_socket_callbacks &callbacks);
+         const sockaddr &address,
+         int address_length,
+         tcp_listening_socket_callbacks &callbacks);
 
-      ~tcp_socket() override;
+      ~tcp_listening_socket() override;
 
-      void connect(
+      void bind(
          const sockaddr &address,
          int address_length);
 
-      void accepted();
+      void listen(
+         int backlog);
 
-      int write(
-         const BYTE *pData,
-         int data_length);
-
-      int read(
-         BYTE *pBuffer,
-         int buffer_length);
+      tcp_socket *accept(
+         sockaddr &address,
+         int &address_length,
+         tcp_socket_callbacks &callbacks);
 
       void close();
-
-      enum class shutdown_how
-      {
-         receive  = 0x00,
-         send     = 0x01,
-         both     = 0x02
-      };
-
-      void shutdown(
-         shutdown_how how);
 
    private :
 
@@ -117,6 +92,8 @@ class tcp_socket : public afd_events
          ULONG eventsToHandle,
          NTSTATUS status);
 
+      HANDLE iocp;
+
       SOCKET s;
 
       SOCKET baseSocket;
@@ -124,16 +101,16 @@ class tcp_socket : public afd_events
       AFD_POLL_INFO pollInfoIn;
       AFD_POLL_INFO pollInfoOut;
       IO_STATUS_BLOCK statusBlock;
- 
+
       ULONG events;
 
-      tcp_socket_callbacks &callbacks;
+      tcp_listening_socket_callbacks &callbacks;
 
       enum class state
       {
          created,
-         pending_connect,
-         connected,
+         bound,
+         listening,
          disconnected
       };
 
@@ -141,5 +118,5 @@ class tcp_socket : public afd_events
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// End of file: tcp_socket.h
+// End of file: tcp_listening_socket.h
 ///////////////////////////////////////////////////////////////////////////////
