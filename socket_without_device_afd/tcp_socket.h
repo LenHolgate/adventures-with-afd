@@ -134,6 +134,7 @@ class tcp_socket : public afd_events
          created,
          pending_connect,
          connected,
+         client_closed,
          disconnected
       };
 

@@ -170,6 +170,8 @@ void tcp_socket::accepted()
 bool tcp_socket::poll(
    const ULONG events)
 {
+   std::cout << this << " - poll" << std::endl;
+
    pollInfoIn.Handles[0].Status = 0;
    pollInfoIn.Handles[0].Events = events;
 
@@ -331,23 +333,29 @@ void tcp_socket::close()
 void tcp_socket::shutdown(
    const shutdown_how how)
 {
-   if (connection_state != state::connected)
+   if (s != INVALID_SOCKET)
    {
-      throw std::exception("not connected");
-   }
+      if (connection_state != state::connected &&
+          connection_state != state::client_closed)
+      {
+         throw std::exception("not connected");
+      }
 
-   // there are no callbacks for local operations, we assume the caller
-   // can track the fact that we've shutdown if it's interesting in remembering
-   // this detail...
+      // there are no callbacks for local operations, we assume the caller
+      // can track the fact that we've shutdown if it's interesting in remembering
+      // this detail...
 
-   if (SOCKET_ERROR == ::shutdown(s, static_cast<int>(how)))
-   {
-      throw std::exception("failed to shutdown");
+      if (SOCKET_ERROR == ::shutdown(s, static_cast<int>(how)))
+      {
+         throw std::exception("failed to shutdown");
+      }
    }
 }
 
 void tcp_socket::handle_events()
 {
+   std::cout << this << " - handle_events" << std::endl;
+
    if (pollInfoOut.NumberOfHandles != 1)
    {
       throw std::exception("unexpected number of handles");
@@ -409,7 +417,7 @@ ULONG tcp_socket::handle_events(
 
    if (AFD_POLL_DISCONNECT & eventsToHandle)
    {
-      connection_state = state::disconnected;
+      connection_state = state::client_closed;
 
       callbacks.on_client_close(*this);
    }

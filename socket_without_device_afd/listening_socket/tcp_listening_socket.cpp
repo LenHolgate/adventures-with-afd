@@ -127,7 +127,7 @@ void tcp_listening_socket::bind(
 {
    if (connection_state != state::created)
    {
-      throw std::exception("too late to bind");
+      throw std::exception("tcp_listening_socket - too late to bind");
    }
 
    if (0 != ::bind(s, &address, address_length))
@@ -136,7 +136,7 @@ void tcp_listening_socket::bind(
 
       (void)lastError;
 
-      throw std::exception("failed to bind");
+      throw std::exception("tcp_listening_socket - failed to bind");
    }
 
    connection_state = state::bound;
@@ -169,7 +169,7 @@ void tcp_listening_socket::listen(
 {
    if (SOCKET_ERROR == ::listen(s, backlog))
    {
-      throw std::exception("failed to listen");
+      throw std::exception("tcp_listening_socket - failed to listen");
    }
 
    connection_state = state::listening;
@@ -179,13 +179,10 @@ void tcp_listening_socket::listen(
    poll(events);
 }
 
-tcp_socket *tcp_listening_socket::accept(
+SOCKET tcp_listening_socket::accept(
    sockaddr &address,
-   int &address_length,
-   tcp_socket_callbacks &callbacks)
+   int &address_length)
 {
-   tcp_socket *pSocket = nullptr;
-
    SOCKET accepted = ::accept(s, &address, &address_length);
 
    if (accepted != INVALID_SOCKET)
@@ -194,15 +191,16 @@ tcp_socket *tcp_listening_socket::accept(
 
       if (0 != ioctlsocket(accepted, FIONBIO, &one))
       {
-         throw std::exception("ioctl failed to set non-blocking");
+         throw std::exception("tcp_listening_socket - ioctl failed to set non-blocking");
       }
-
-      pSocket = new tcp_socket(iocp, accepted, callbacks);
-
-      pSocket->accepted();
    }
 
-   return pSocket;
+   return accepted;
+}
+
+HANDLE tcp_listening_socket::get_iocp() const
+{
+   return iocp;
 }
 
 void tcp_listening_socket::close()
@@ -213,7 +211,7 @@ void tcp_listening_socket::close()
 
       if (SOCKET_ERROR == closesocket(s))
       {
-         throw std::exception("failed to close");
+         throw std::exception("tcp_listening_socket - failed to close");
       }
 
       s = INVALID_SOCKET;
@@ -229,7 +227,7 @@ void tcp_listening_socket::handle_events()
 {
    if (pollInfoOut.NumberOfHandles != 1)
    {
-      throw std::exception("unexpected number of handles");
+      throw std::exception("tcp_listening_socket - unexpected number of handles");
    }
 
    // process events...

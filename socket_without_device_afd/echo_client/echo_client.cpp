@@ -87,6 +87,8 @@ class echo_client : private tcp_socket_callbacks
       void write_data(
          tcp_socket &s)
       {
+         std::cout << "write_data - " << number_of_messages_sent << " of " << number_of_messages << std::endl;
+
          if (number_of_messages_sent < number_of_messages)
          {
             if (sizeof send_buffer != s.write(send_buffer, sizeof send_buffer))
@@ -119,11 +121,15 @@ class echo_client : private tcp_socket_callbacks
             bytes_read_this_time = s.read(&recv_buffer[bytes_read], bytes_needed);
 
             bytes_read += bytes_read_this_time;
+
+            std::cout << "read_data - new data: " << bytes_read_this_time << " total: " << bytes_read << std::endl;
          }
          while (bytes_read_this_time && bytes_read < sizeof recv_buffer);
 
          if (bytes_read == sizeof recv_buffer)
          {
+            std::cout << "read_data - validate" << std::endl;
+
             // validate
 
             if (0 != memcmp(send_buffer, recv_buffer, bytes_read))
@@ -159,13 +165,16 @@ class echo_client : private tcp_socket_callbacks
       void on_readable(
          tcp_socket &s) override
       {
+         std::cout << "on_readable" << std::endl;
+
          read_data(s);
       }
-
 
       void on_readable_oob(
          tcp_socket &s) override
       {
+         std::cout << "on_readable_oob" << std::endl;
+
          (void)s;
 
          throw std::exception("unexpected out-of-band data available");
@@ -174,6 +183,8 @@ class echo_client : private tcp_socket_callbacks
       void on_writable(
          tcp_socket &s) override
       {
+         std::cout << "on_writable" << std::endl;
+
          (void)s;
 
          throw std::exception("unexpected writable...");
@@ -182,6 +193,8 @@ class echo_client : private tcp_socket_callbacks
       void on_client_close(
          tcp_socket &s) override
       {
+         std::cout << "on_client_close" << std::endl;
+
          s.shutdown(tcp_socket::shutdown_how::both);
 
          is_done = true;
@@ -190,6 +203,8 @@ class echo_client : private tcp_socket_callbacks
       void on_connection_reset(
          tcp_socket &s) override
       {
+         std::cout << "on_connection_reset" << std::endl;
+
          s.close();
 
          is_done = true;
@@ -198,6 +213,8 @@ class echo_client : private tcp_socket_callbacks
       void on_disconnected(
          tcp_socket &s) override
       {
+         std::cout << "on_disconnected" << std::endl;
+
          (void)s;
 
          is_done = true;

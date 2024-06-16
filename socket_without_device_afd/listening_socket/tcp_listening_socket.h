@@ -29,8 +29,6 @@
 
 #include "afd_events.h"
 
-class tcp_socket;
-class tcp_socket_callbacks;
 class tcp_listening_socket;
 
 class tcp_listening_socket_callbacks
@@ -74,10 +72,11 @@ class tcp_listening_socket : private afd_events
       void listen(
          int backlog);
 
-      tcp_socket *accept(
+      SOCKET accept(
          sockaddr &address,
-         int &address_length,
-         tcp_socket_callbacks &callbacks);
+         int &address_length);
+
+      HANDLE get_iocp() const;
 
       void close();
 

@@ -58,20 +58,6 @@ class mock_tcp_listening_socket_callbacks : public tcp_listening_socket_callback
    MOCK_METHOD(void, on_disconnected, (tcp_listening_socket &), (override));
 };
 
-class mock_tcp_socket_callbacks : public tcp_socket_callbacks
-{
-   public :
-
-   MOCK_METHOD(void, on_connected, (tcp_socket &), (override));
-   MOCK_METHOD(void, on_connection_failed, (tcp_socket &, DWORD), (override));
-   MOCK_METHOD(void, on_readable, (tcp_socket &), (override));
-   MOCK_METHOD(void, on_readable_oob, (tcp_socket &), (override));
-   MOCK_METHOD(void, on_writable, (tcp_socket &), (override));
-   MOCK_METHOD(void, on_client_close, (tcp_socket &), (override));
-   MOCK_METHOD(void, on_connection_reset, (tcp_socket &), (override));
-   MOCK_METHOD(void, on_disconnected, (tcp_socket &), (override));
-};
-
 TEST(AFDListeningSocket, TestConstruct)
 {
    const auto iocp = CreateIOCP();
@@ -284,17 +270,13 @@ TEST(AFDListeningSocket, TestAccept)
 
    int client_address_length = sizeof client_address;
 
-   mock_tcp_socket_callbacks accepted_callbacks;
+   SOCKET accepted = socket.accept(reinterpret_cast<sockaddr &>(client_address), client_address_length);
 
-   EXPECT_CALL(accepted_callbacks, on_connected(::testing::_)).Times(1);
-
-   auto *pAcceptedSocket = socket.accept(reinterpret_cast<sockaddr &>(client_address), client_address_length, accepted_callbacks);
-
-   EXPECT_NE(pAcceptedSocket, nullptr);
+   EXPECT_NE(accepted, INVALID_SOCKET);
 
    ::closesocket(s);
 
-   delete pAcceptedSocket;
+   ::closesocket(accepted);
 }
 
 TEST(AFDListeningSocket, TestClose)
