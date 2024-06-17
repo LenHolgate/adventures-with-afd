@@ -40,6 +40,13 @@
 
 #include <exception>
 
+
+#ifdef DEBUG_POLLING
+#define DEBUGGING(_m) _m
+#else
+#define DEBUGGING(_m)
+#endif
+
 static SOCKET CreateNonBlockingSocket()
 {
    SOCKET s = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -84,7 +91,7 @@ tcp_socket::tcp_socket(
 {
    // Associate the AFD handle with the IOCP...
 
-   if (nullptr == CreateIoCompletionPort(reinterpret_cast<HANDLE>(baseSocket), iocp, 0, 0))
+   if (nullptr == CreateIoCompletionPort(reinterpret_cast<HANDLE>(baseSocket), iocp, reinterpret_cast<ULONG_PTR>(static_cast<afd_events *>(this)), 0))
    {
       ErrorExit("CreateIoCompletionPort");
    }
@@ -170,7 +177,7 @@ void tcp_socket::accepted()
 bool tcp_socket::poll(
    const ULONG events)
 {
-   std::cout << this << " - poll" << std::endl;
+   DEBUGGING(std::cout << this << " - poll" << std::endl);
 
    pollInfoIn.Handles[0].Status = 0;
    pollInfoIn.Handles[0].Events = events;
@@ -188,7 +195,7 @@ bool tcp_socket::poll(
       statusBlock,
       &pollInfoOut,
       sizeof pollInfoOut,
-      static_cast<afd_events *>(this));
+      &statusBlock);
 }
 
 int tcp_socket::write(
@@ -354,18 +361,30 @@ void tcp_socket::shutdown(
 
 void tcp_socket::handle_events()
 {
-   std::cout << this << " - handle_events" << std::endl;
+   DEBUGGING(std::cout << this << " - handle_events" << std::endl);
 
-   if (pollInfoOut.NumberOfHandles != 1)
+   if (pollInfoOut.NumberOfHandles)
    {
-      throw std::exception("unexpected number of handles");
+      if (pollInfoOut.NumberOfHandles != 1)
+      {
+         throw std::exception("unexpected number of handles");
+      }
+
+      // process events...
+
+      if (pollInfoOut.Handles[0].Status || pollInfoOut.Handles[0].Events)
+      {
+         pollInfoIn.Handles[0].Events = handle_events(pollInfoOut.Handles[0].Events, RtlNtStatusToDosError(pollInfoOut.Handles[0].Status));
+
+         if (pollInfoIn.Handles[0].Events)
+         {
+            poll(pollInfoIn.Handles[0].Events);
+         }
+      }
    }
-
-   // process events...
-
-   if (pollInfoOut.Handles[0].Status || pollInfoOut.Handles[0].Events)
+   else
    {
-      pollInfoIn.Handles[0].Events = handle_events(pollInfoOut.Handles[0].Events, RtlNtStatusToDosError(pollInfoOut.Handles[0].Status));
+      DEBUGGING(std::cout << this << " - handle_events - no events" << std::endl);
    }
 }
 

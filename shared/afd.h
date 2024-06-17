@@ -427,6 +427,46 @@ inline void CancelPoll(
    CancelPoll(hAfD, &data.statusBlock);
 }
 
+inline ULONG_PTR GetCompletionKey(
+   const HANDLE hIOCP,
+   const DWORD timeout,
+   const DWORD expectedResult = ERROR_SUCCESS)
+{
+   DWORD numberOfBytes = 0;
+
+   ULONG_PTR completionKey = 0;
+
+   OVERLAPPED *pOverlapped = nullptr;
+
+   // A completion will not happen until there is an event on the socket...
+   // what about that timeout in the poll information?
+
+   SetLastError(ERROR_SUCCESS);
+
+   const auto result = GetQueuedCompletionStatus(hIOCP, &numberOfBytes, &completionKey, &pOverlapped, timeout);
+
+   (void)result;
+
+   const DWORD lastError = GetLastError();
+
+   if (lastError != expectedResult)
+   {
+      ErrorExit("GetQueuedCompletionStatus");
+   }
+
+   return completionKey;
+}
+
+template <typename T>
+inline T *GetCompletionKeyAs(
+   const HANDLE hIOCP,
+   const DWORD timeout,
+   const DWORD expectedResult = ERROR_SUCCESS)
+{
+   return reinterpret_cast<T *>(GetCompletionKey(hIOCP, timeout, expectedResult));
+}
+
+
 inline OVERLAPPED *GetCompletion(
    const HANDLE hIOCP,
    const DWORD timeout,

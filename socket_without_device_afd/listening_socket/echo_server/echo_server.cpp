@@ -357,7 +357,7 @@ int main(int argc, char **argv)
             }
          }
 
-         auto *pSocket = reinterpret_cast<afd_events*>(pOverlapped);
+         auto *pSocket = reinterpret_cast<afd_events*>(completionKey);
 
          if (pSocket)
          {

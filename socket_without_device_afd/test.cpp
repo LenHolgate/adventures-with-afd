@@ -88,7 +88,7 @@ TEST(AFDSocket, TestConnectFail)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, INFINITE);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, INFINITE);
 
    EXPECT_CALL(callbacks, on_connection_failed(::testing::_, ::testing::_)).Times(1);
 
@@ -113,7 +113,7 @@ TEST(AFDSocket, TestConnect)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -138,7 +138,7 @@ TEST(AFDSocket, TestConnectAndSend)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -167,7 +167,7 @@ TEST(AFDSocket, TestConnectAndRecv)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -191,7 +191,7 @@ TEST(AFDSocket, TestConnectAndRecv)
 
    Write(s, testData);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
@@ -226,7 +226,7 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -236,7 +236,7 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithNoPollPending)
 
    socket.close();
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -259,7 +259,7 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -275,7 +275,7 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithPollPending)
 
    socket.close();
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_disconnected(::testing::_)).Times(1);
 
@@ -300,7 +300,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -308,7 +308,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendNoPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::send);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -331,7 +331,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -349,7 +349,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendWithPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::send);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -372,7 +372,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -382,7 +382,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvNoPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::receive);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -405,7 +405,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -423,7 +423,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvWithPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::receive);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -446,7 +446,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -456,7 +456,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothNoPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::both);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -479,7 +479,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -497,7 +497,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothWithPollPending)
 
    socket.shutdown(tcp_socket::shutdown_how::both);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -520,7 +520,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -530,7 +530,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseNoPollPending)
 
    Close(s);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -553,7 +553,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -571,7 +571,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithPollPending)
 
    Close(s);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
@@ -596,7 +596,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDetectsOnNextRead)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -606,7 +606,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDetectsOnNextRead)
 
    Close(s);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 
@@ -618,7 +618,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDetectsOnNextRead)
 
    EXPECT_EQ(available, 0);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
@@ -643,7 +643,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDoesNotDetectOnNextWri
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -653,7 +653,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDoesNotDetectOnNextWri
 
    Close(s);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 
@@ -663,7 +663,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDoesNotDetectOnNextWri
 
    EXPECT_EQ(sent, sizeof data);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -686,7 +686,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -696,7 +696,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetNoPollPending)
 
    Abort(s);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -719,7 +719,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -737,7 +737,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithPollPending)
 
    Abort(s);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connection_reset(::testing::_)).Times(1);
 
@@ -762,7 +762,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextRead)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -772,7 +772,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextRead)
 
    Abort(s);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 
@@ -784,7 +784,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextRead)
 
    EXPECT_EQ(available, 0);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connection_reset(::testing::_)).Times(1);
 
@@ -809,7 +809,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextWrite)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -819,7 +819,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextWrite)
 
    Abort(s);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 
@@ -829,7 +829,7 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextWrite)
 
    EXPECT_EQ(sent, 0);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_writable(::testing::_)).Times(1);
    EXPECT_CALL(callbacks, on_connection_reset(::testing::_)).Times(1);
@@ -855,7 +855,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -865,7 +865,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendNoPollPending)
 
    shutdown(s, SD_SEND);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -888,7 +888,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -906,7 +906,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithPollPending)
 
    shutdown(s, SD_SEND);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
@@ -931,7 +931,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDetectsOnNextRe
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -941,7 +941,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDetectsOnNextRe
 
    shutdown(s, SD_SEND);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 
@@ -955,7 +955,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDetectsOnNextRe
 
    EXPECT_EQ(available, 0);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
@@ -980,7 +980,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDoesNotDetectOn
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -990,7 +990,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDoesNotDetectOn
 
    shutdown(s, SD_SEND);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 
@@ -1000,7 +1000,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDoesNotDetectOn
 
    EXPECT_EQ(sent, sizeof data);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -1023,7 +1023,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvNoPollPending)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -1033,7 +1033,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvNoPollPending)
 
    shutdown(s, SD_RECEIVE);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -1056,7 +1056,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvWithPollPendingDetectsNothing)
 
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -1074,7 +1074,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecvWithPollPendingDetectsNothing)
 
    shutdown(s, SD_RECEIVE);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -1099,7 +1099,7 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    socket1.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    //EXPECT_EQ(pSocket, &socket1);
 
@@ -1123,7 +1123,7 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    socket2.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    //EXPECT_EQ(pSocket, &socket2);
 
@@ -1137,7 +1137,7 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    Write(s1, testData);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
@@ -1159,7 +1159,7 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    Write(s2, testData);
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
@@ -1199,7 +1199,7 @@ TEST(AFDSocket, TestAcceptedSocket)
 
    connected_socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_EQ(pSocket, &connected_socket);
 
@@ -1228,7 +1228,7 @@ TEST(AFDSocket, TestAcceptedSocket)
 
    accepted_socket.accepted();
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_EQ(pSocket, &accepted_socket);
 
@@ -1240,7 +1240,7 @@ TEST(AFDSocket, TestAcceptedSocket)
 
    accepted_socket.write(reinterpret_cast<const BYTE *>(testData.c_str()), static_cast<int>(testData.length()));
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
@@ -1262,7 +1262,7 @@ TEST(AFDSocket, TestAcceptedSocket)
 
    connected_socket.write(reinterpret_cast<const BYTE *>(testData.c_str()), static_cast<int>(testData.length()));
 
-   pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 

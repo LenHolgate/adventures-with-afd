@@ -225,7 +225,7 @@ TEST(AFDListeningSocket, TestIncomingConnection)
 
    EXPECT_CALL(callbacks, on_incoming_connections(::testing::_)).Times(1);
 
-   auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_NE(pSocket, nullptr);
 
@@ -259,7 +259,7 @@ TEST(AFDListeningSocket, TestAccept)
    EXPECT_CALL(callbacks, on_incoming_connections(::testing::_)).Times(1);
 
    {
-      auto *pSocket = GetCompletionAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+      auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
       EXPECT_NE(pSocket, nullptr);
 

@@ -259,7 +259,7 @@ int main(int argc, char **argv)
       {
          // process events
 
-         auto *pSocket = GetCompletionAs<afd_events>(iocp, INFINITE);
+         auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, INFINITE);
 
          if (pSocket)
          {

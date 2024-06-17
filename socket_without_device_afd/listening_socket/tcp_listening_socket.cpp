@@ -41,6 +41,12 @@
 
 #include <exception>
 
+#ifdef DEBUG_POLLING
+#define DEBUGGING(_m) _m
+#else
+#define DEBUGGING(_m)
+#endif
+
 static SOCKET CreateNonBlockingSocket()
 {
    SOCKET s = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, nullptr, 0, WSA_FLAG_OVERLAPPED);
@@ -76,7 +82,7 @@ tcp_listening_socket::tcp_listening_socket(
 {
    // Associate the AFD handle with the IOCP...
 
-   if (nullptr == CreateIoCompletionPort(reinterpret_cast<HANDLE>(baseSocket), iocp, 0, 0))
+   if (nullptr == CreateIoCompletionPort(reinterpret_cast<HANDLE>(baseSocket), iocp, reinterpret_cast<ULONG_PTR>(static_cast<afd_events *>(this)), 0))
    {
       ErrorExit("CreateIoCompletionPort");
    }
@@ -86,7 +92,7 @@ tcp_listening_socket::tcp_listening_socket(
       ErrorExit("SetFileCompletionNotificationModes");
    }
 
-   pollInfoIn.Exclusive = FALSE;
+   pollInfoIn.Exclusive = TRUE;
    pollInfoIn.NumberOfHandles = 1;
    pollInfoIn.Timeout.QuadPart = INT64_MAX;
    pollInfoIn.Handles[0].Handle = reinterpret_cast<HANDLE>(baseSocket);
@@ -145,6 +151,8 @@ void tcp_listening_socket::bind(
 bool tcp_listening_socket::poll(
    const ULONG events)
 {
+   DEBUGGING(std::cout << this << " - listening_socket - poll" << std::endl);
+
    pollInfoIn.Handles[0].Status = 0;
    pollInfoIn.Handles[0].Events = events;
 
@@ -161,7 +169,7 @@ bool tcp_listening_socket::poll(
       statusBlock,
       &pollInfoOut,
       sizeof pollInfoOut,
-      static_cast<afd_events *>(this));
+      &statusBlock);
 }
 
 void tcp_listening_socket::listen(
@@ -225,16 +233,25 @@ void tcp_listening_socket::close()
 
 void tcp_listening_socket::handle_events()
 {
-   if (pollInfoOut.NumberOfHandles != 1)
+   DEBUGGING(std::cout << this << " - listening_socket - handle_events" << std::endl);
+
+   if (pollInfoOut.NumberOfHandles)
    {
-      throw std::exception("tcp_listening_socket - unexpected number of handles");
+      if (pollInfoOut.NumberOfHandles != 1)
+      {
+         throw std::exception("tcp_listening_socket - unexpected number of handles");
+      }
+
+      // process events...
+
+      if (pollInfoOut.Handles[0].Status || pollInfoOut.Handles[0].Events)
+      {
+         pollInfoIn.Handles[0].Events = handle_events(pollInfoOut.Handles[0].Events, RtlNtStatusToDosError(pollInfoOut.Handles[0].Status));
+      }
    }
-
-   // process events...
-
-   if (pollInfoOut.Handles[0].Status || pollInfoOut.Handles[0].Events)
+   else
    {
-      pollInfoIn.Handles[0].Events = handle_events(pollInfoOut.Handles[0].Events, RtlNtStatusToDosError(pollInfoOut.Handles[0].Status));
+      DEBUGGING(std::cout << this << " - listening_socket - handle_events - no events" << std::endl);
    }
 }
 

@@ -151,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="explore.cpp" />
     <ClCompile Include="tcp_socket.cpp" />
     <ClCompile Include="test.cpp" />
   </ItemGroup>
