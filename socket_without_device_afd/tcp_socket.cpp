@@ -40,6 +40,7 @@
 
 #include <exception>
 
+//#define DEBUG_POLLING
 
 #ifdef DEBUG_POLLING
 #define DEBUGGING(_m) _m
@@ -149,11 +150,7 @@ void tcp_socket::connect(
 
    connection_state = state::pending_connect;
 
-   events = AFD_POLL_SEND |                     // writable which also means "connected"
-            AFD_POLL_DISCONNECT |               // client close
-            AFD_POLL_ABORT |                    // closed
-            AFD_POLL_LOCAL_CLOSE |              // we have closed
-            AFD_POLL_CONNECT_FAIL;              // outbound connection failed
+   events = AllEvents;
 
    poll(events);
 }
@@ -179,23 +176,28 @@ bool tcp_socket::poll(
 {
    DEBUGGING(std::cout << this << " - poll" << std::endl);
 
-   pollInfoIn.Handles[0].Status = 0;
-   pollInfoIn.Handles[0].Events = events;
+   if (s != INVALID_SOCKET)
+   {
+      pollInfoIn.Handles[0].Status = 0;
+      pollInfoIn.Handles[0].Events = events;
 
-   // zero poll out
+      // zero poll out
 
-   memset(&pollInfoOut, 0, sizeof pollInfoOut);
+      memset(&pollInfoOut, 0, sizeof pollInfoOut);
 
-   memset(&statusBlock, 0, sizeof statusBlock);
+      memset(&statusBlock, 0, sizeof statusBlock);
 
-   return SetupPollForSocketEventsX(
-      reinterpret_cast<HANDLE>(baseSocket),
-      &pollInfoIn,
-      sizeof pollInfoIn,
-      statusBlock,
-      &pollInfoOut,
-      sizeof pollInfoOut,
-      &statusBlock);
+      return SetupPollForSocketEventsX(
+         reinterpret_cast<HANDLE>(baseSocket),
+         &pollInfoIn,
+         sizeof pollInfoIn,
+         statusBlock,
+         &pollInfoOut,
+         sizeof pollInfoOut,
+         &statusBlock);
+   }
+
+   return false;
 }
 
 int tcp_socket::write(
@@ -238,12 +240,10 @@ int tcp_socket::write(
 
    if (bytes != data_length)
    {
-      events |= (AFD_POLL_SEND |
-                 AFD_POLL_DISCONNECT |               // client close
-                 AFD_POLL_ABORT |                    // closed
-                 AFD_POLL_LOCAL_CLOSE);              // we have closed
-
-      poll(events);
+      if ((events & AFD_POLL_SEND) == 0)
+      {
+         events |= AFD_POLL_SEND;
+      }
    }
 
    return bytes;
@@ -292,12 +292,10 @@ int tcp_socket::read(
 
    if (bytes == 0)
    {
-      events |= (AFD_POLL_RECEIVE |
-                 AFD_POLL_DISCONNECT |               // client close
-                 AFD_POLL_ABORT |                    // closed
-                 AFD_POLL_LOCAL_CLOSE);              // we have closed
-
-      poll(events);
+      if ((events & AFD_POLL_RECEIVE) == 0)
+      {
+         events |= AFD_POLL_RECEIVE;
+      }
    }
 
    return bytes;
@@ -305,16 +303,6 @@ int tcp_socket::read(
 
 void tcp_socket::close()
 {
-   // two options here, one is to always have a poll pending for close/reset events
-   // the second is to only report those if we have a read or write poll pending
-   // only polling when we need to is likely more efficient but makes the reporting
-   // of closure dependent on reading/writing - much as with normal sockets, this
-   // means that for long lived connections with little activity we would fail to
-   // see closure unless we have a read pending, but, chances are we would have a
-   // read pending...
-   // for now, allow polling only for read/write and deal with closure callbacks
-   // here if we don't have a poll pending...
-
    // this may complicate matters as we now have callbacks occurring from calls to
    // the socket api on the same thread, which we don't get from the polled
    // situation
@@ -395,13 +383,13 @@ ULONG tcp_socket::handle_events(
    // need to know what state we're in as we would do one thing for connect and other things when
    // connected?
 
-   events = 0;
-
    if (connection_state == state::pending_connect)
    {
       if (AFD_POLL_CONNECT_FAIL & eventsToHandle)
       {
          connection_state = state::disconnected;
+
+         events &= ~AFD_POLL_CONNECT_FAIL;
 
          callbacks.on_connection_failed(*this, status);
       }
@@ -409,26 +397,36 @@ ULONG tcp_socket::handle_events(
       {
          connection_state = state::connected;
 
+         events &= ~AFD_POLL_SEND;
+
          callbacks.on_connected(*this);
       }
    }
    else if (AFD_POLL_SEND & eventsToHandle)
    {
+      events &= ~AFD_POLL_SEND;
+
       callbacks.on_writable(*this);
    }
 
    if (AFD_POLL_RECEIVE & eventsToHandle)
    {
+      events &= ~AFD_POLL_RECEIVE;
+
       callbacks.on_readable(*this);
    }
 
    if (AFD_POLL_RECEIVE_EXPEDITED & eventsToHandle)
    {
+      events &= ~AFD_POLL_RECEIVE_EXPEDITED;
+
       callbacks.on_readable_oob(*this);
    }
 
    if (AFD_POLL_ABORT & eventsToHandle)
    {
+      events &= ~AFD_POLL_ABORT;
+
       connection_state = state::disconnected;
 
       callbacks.on_connection_reset(*this);
@@ -436,6 +434,8 @@ ULONG tcp_socket::handle_events(
 
    if (AFD_POLL_DISCONNECT & eventsToHandle)
    {
+      events &= ~AFD_POLL_DISCONNECT;
+
       connection_state = state::client_closed;
 
       callbacks.on_client_close(*this);
@@ -443,6 +443,8 @@ ULONG tcp_socket::handle_events(
 
    if (AFD_POLL_LOCAL_CLOSE & eventsToHandle)
    {
+      events &= ~AFD_POLL_LOCAL_CLOSE;
+
       connection_state = state::disconnected;
 
       callbacks.on_disconnected(*this);
