@@ -33,6 +33,8 @@
 
 #include <winternl.h>
 
+#include <vector>
+
 #pragma comment(lib, "ntdll.lib")
 
 struct AfDWithIOCP
@@ -464,6 +466,40 @@ inline T *GetCompletionKeyAs(
    const DWORD expectedResult = ERROR_SUCCESS)
 {
    return reinterpret_cast<T *>(GetCompletionKey(hIOCP, timeout, expectedResult));
+}
+
+template <typename T>
+inline DWORD GetCompletionKeysAs(
+   const HANDLE hIOCP,
+   const DWORD timeout,
+   std::vector<T *> &completionKeys)
+{
+   std::vector<OVERLAPPED_ENTRY> overlapped;
+
+   overlapped.resize(completionKeys.size());
+
+   DWORD numEntries = 0;
+
+   if (GetQueuedCompletionStatusEx(hIOCP, &overlapped[0], sizeof(overlapped), &numEntries, timeout, FALSE))
+   {
+      for (DWORD i = 0; i < numEntries; ++i)
+      {
+         completionKeys[i] = reinterpret_cast<T *>(overlapped[i].lpCompletionKey);
+      }
+
+      completionKeys.resize(numEntries);
+   }
+   else
+   {
+      const DWORD lastError = GetLastError();
+
+      if (lastError != WAIT_TIMEOUT)
+      {
+         ErrorExit("GetQueuedCompletionStatusEx");
+      }
+   }
+
+   return numEntries;
 }
 
 
