@@ -139,6 +139,8 @@ class tcp_socket : public afd_events
       };
 
       state connection_state;
+
+      bool handling_events;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

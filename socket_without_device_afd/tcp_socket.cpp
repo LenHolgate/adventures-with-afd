@@ -88,7 +88,8 @@ tcp_socket::tcp_socket(
       statusBlock{},
       events(0),
       callbacks(callbacks),
-      connection_state(state::created)
+      connection_state(state::created),
+      handling_events(false)
 {
    // Associate the AFD handle with the IOCP...
 
@@ -243,6 +244,11 @@ int tcp_socket::write(
       if ((events & AFD_POLL_SEND) == 0)
       {
          events |= AFD_POLL_SEND;
+
+         if (!handling_events)
+         {
+            poll(events);
+         }
       }
    }
 
@@ -295,6 +301,11 @@ int tcp_socket::read(
       if ((events & AFD_POLL_RECEIVE) == 0)
       {
          events |= AFD_POLL_RECEIVE;
+
+         if (!handling_events)
+         {
+            poll(events);
+         }
       }
    }
 
@@ -362,7 +373,11 @@ void tcp_socket::handle_events()
 
       if (pollInfoOut.Handles[0].Status || pollInfoOut.Handles[0].Events)
       {
+         handling_events = true;
+
          pollInfoIn.Handles[0].Events = handle_events(pollInfoOut.Handles[0].Events, RtlNtStatusToDosError(pollInfoOut.Handles[0].Status));
+
+         handling_events = false;
 
          if (pollInfoIn.Handles[0].Events)
          {

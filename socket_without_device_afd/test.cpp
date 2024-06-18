@@ -738,6 +738,157 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
    EXPECT_EQ(available, 0);
 }
 
+TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusExReadInOnReadable)
+{
+   const auto listeningSocket = CreateListeningSocket();
+
+   const auto iocp = CreateIOCP();
+
+   const std::string testData("test");
+
+   BYTE buffer[100];
+
+   int buffer_length = sizeof buffer;
+
+   // In this test we issue the reads inside the on_readable callback. This
+   // results in the read that returns 0 automatically adjusting the poll
+   // to add readable back into the events we're interested in
+
+   mock_tcp_socket_callbacks_ex callbacks1([&](tcp_socket &s){
+      DWORD available = s.read(buffer, buffer_length);
+
+      EXPECT_EQ(available, testData.length());
+
+      EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
+
+      available = s.read(buffer, buffer_length);
+
+      EXPECT_EQ(available, 0);
+      });
+
+   mock_tcp_socket_callbacks_ex callbacks2([&](tcp_socket &s){
+      DWORD available = s.read(buffer, buffer_length);
+
+      EXPECT_EQ(available, testData.length());
+
+      EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
+
+      available = s.read(buffer, buffer_length);
+
+      EXPECT_EQ(available, 0);
+      });
+
+   tcp_socket socket1(iocp, callbacks1);
+
+   tcp_socket socket2(iocp, callbacks2);
+
+   sockaddr_in address {};
+
+   address.sin_family = AF_INET;
+   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   address.sin_port = htons(listeningSocket.port);
+
+   socket1.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
+
+   socket2.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
+
+   std::vector<afd_events *> sockets;
+
+   sockets.resize(3);
+
+   DWORD numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 2);
+
+   EXPECT_CALL(callbacks1, on_connected(::testing::_)).Times(1);
+   EXPECT_CALL(callbacks2, on_connected(::testing::_)).Times(1);
+
+   if (numEvents)
+   {
+      for (auto *pSocket : sockets)
+      {
+         pSocket->handle_events();
+      }
+   }
+
+   int available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+   available = socket2.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+   // Accept the connections on our listening socket
+
+   const SOCKET s1 = listeningSocket.Accept();
+
+   EXPECT_NE(s1, INVALID_SOCKET);
+
+   const SOCKET s2 = listeningSocket.Accept();
+
+   EXPECT_NE(s2, INVALID_SOCKET);
+
+   // accepted...
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 0);
+
+   Write(s1, testData);
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 1);
+
+   EXPECT_CALL(callbacks1, on_readable(::testing::_)).Times(1);
+
+   if (numEvents)
+   {
+      for (auto *pSocket : sockets)
+      {
+         EXPECT_EQ(pSocket, &socket1);
+
+         pSocket->handle_events();
+      }
+   }
+
+   Write(s2, testData);
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 1);
+
+   EXPECT_CALL(callbacks2, on_readable(::testing::_)).Times(1);
+
+   if (numEvents)
+   {
+      for (auto *pSocket : sockets)
+      {
+         EXPECT_EQ(pSocket, &socket2);
+
+         pSocket->handle_events();
+      }
+   }
+
+   Write(s1, testData);
+   Write(s2, testData);
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 2);
+
+   EXPECT_CALL(callbacks1, on_readable(::testing::_)).Times(1);
+   EXPECT_CALL(callbacks2, on_readable(::testing::_)).Times(1);
+
+   if (numEvents)
+   {
+      for (auto *pSocket : sockets)
+      {
+         pSocket->handle_events();
+      }
+   }
+}
 TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusEx)
 {
    const auto listeningSocket = CreateListeningSocket();
