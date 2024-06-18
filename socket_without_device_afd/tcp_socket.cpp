@@ -103,7 +103,7 @@ tcp_socket::tcp_socket(
       ErrorExit("SetFileCompletionNotificationModes");
    }
 
-   pollInfoIn.Exclusive = FALSE;
+   pollInfoIn.Exclusive = TRUE;
    pollInfoIn.NumberOfHandles = 1;
    pollInfoIn.Timeout.QuadPart = INT64_MAX;
    pollInfoIn.Handles[0].Handle = reinterpret_cast<HANDLE>(baseSocket);
@@ -358,8 +358,10 @@ void tcp_socket::shutdown(
    }
 }
 
-void tcp_socket::handle_events()
+bool tcp_socket::handle_events()
 {
+   bool handled = false;
+
    DEBUGGING(std::cout << this << " - handle_events" << std::endl);
 
    if (pollInfoOut.NumberOfHandles)
@@ -373,6 +375,8 @@ void tcp_socket::handle_events()
 
       if (pollInfoOut.Handles[0].Status || pollInfoOut.Handles[0].Events)
       {
+         handled = true;
+
          handling_events = true;
 
          pollInfoIn.Handles[0].Events = handle_events(pollInfoOut.Handles[0].Events, RtlNtStatusToDosError(pollInfoOut.Handles[0].Status));
@@ -389,6 +393,8 @@ void tcp_socket::handle_events()
    {
       DEBUGGING(std::cout << this << " - handle_events - no events" << std::endl);
    }
+
+   return handled;
 }
 
 ULONG tcp_socket::handle_events(
@@ -451,9 +457,14 @@ ULONG tcp_socket::handle_events(
    {
       events &= ~AFD_POLL_DISCONNECT;
 
-      connection_state = state::client_closed;
+      if (connection_state != state::client_closed)
+      {
+         // not sure why we are suddenly getting this multiple times...
 
-      callbacks.on_client_close(*this);
+         connection_state = state::client_closed;
+
+         callbacks.on_client_close(*this);
+      }
    }
 
    if (AFD_POLL_LOCAL_CLOSE & eventsToHandle)

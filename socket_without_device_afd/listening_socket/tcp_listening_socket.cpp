@@ -231,8 +231,10 @@ void tcp_listening_socket::close()
    }
 }
 
-void tcp_listening_socket::handle_events()
+bool tcp_listening_socket::handle_events()
 {
+   bool handled = false;
+
    DEBUGGING(std::cout << this << " - listening_socket - handle_events" << std::endl);
 
    if (pollInfoOut.NumberOfHandles)
@@ -246,6 +248,8 @@ void tcp_listening_socket::handle_events()
 
       if (pollInfoOut.Handles[0].Status || pollInfoOut.Handles[0].Events)
       {
+         handled = true;
+
          pollInfoIn.Handles[0].Events = handle_events(pollInfoOut.Handles[0].Events, RtlNtStatusToDosError(pollInfoOut.Handles[0].Status));
       }
    }
@@ -253,6 +257,8 @@ void tcp_listening_socket::handle_events()
    {
       DEBUGGING(std::cout << this << " - listening_socket - handle_events - no events" << std::endl);
    }
+
+   return handled;
 }
 
 ULONG tcp_listening_socket::handle_events(

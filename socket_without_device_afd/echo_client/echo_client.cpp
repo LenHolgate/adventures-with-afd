@@ -243,7 +243,7 @@ int main(int argc, char **argv)
    {
       const auto iocp = CreateIOCP();
 
-      const int number_of_messages = 10;
+      const int number_of_messages = 1000;
 
       echo_client client(iocp, number_of_messages);
 

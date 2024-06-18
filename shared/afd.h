@@ -493,8 +493,6 @@ inline DWORD GetCompletionKeysAs(
             completionKeys[completionKeyIndex++] = reinterpret_cast<T *>(overlapped[i].lpCompletionKey);
          }
       }
-
-      completionKeys.resize(completionKeyIndex);
    }
    else
    {
@@ -505,6 +503,8 @@ inline DWORD GetCompletionKeysAs(
          ErrorExit("GetQueuedCompletionStatusEx");
       }
    }
+
+   completionKeys.resize(completionKeyIndex);
 
    return completionKeyIndex;
 }

@@ -119,7 +119,7 @@ TEST(AFDSocket, TestConnectFail)
 
    EXPECT_CALL(callbacks, on_connection_failed(::testing::_, ::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 }
 
 TEST(AFDSocket, TestConnect)
@@ -146,7 +146,7 @@ TEST(AFDSocket, TestConnect)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 }
 
 TEST(AFDSocket, TestConnectAndSend)
@@ -173,7 +173,7 @@ TEST(AFDSocket, TestConnectAndSend)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    static const BYTE data[] = { 1, 2, 3, 4 };
 
@@ -224,7 +224,7 @@ TEST(AFDSocket, TestConnectAndRecvReadInOnReadable)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    int available = socket.read(buffer, buffer_length);
 
@@ -248,7 +248,7 @@ TEST(AFDSocket, TestConnectAndRecvReadInOnReadable)
 
       EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
-      pSocket->handle_events();
+      EXPECT_EQ(pSocket->handle_events(), true);
 
       // read is dealt with in on_readable and the poll is reset to include
       // the readable event...
@@ -278,7 +278,7 @@ TEST(AFDSocket, TestConnectAndRecv)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    BYTE buffer[100];
 
@@ -308,7 +308,14 @@ TEST(AFDSocket, TestConnectAndRecv)
 
       EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
-      pSocket->handle_events();
+      if (!pSocket->handle_events())
+      {
+         pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+         EXPECT_EQ(pSocket, &socket);
+
+         EXPECT_EQ(pSocket->handle_events(), true);
+      }
 
       available = socket.read(buffer, buffer_length);
 
@@ -346,7 +353,7 @@ TEST(AFDSocket, TestConnectAndLocalClose)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    EXPECT_CALL(callbacks, on_disconnected(::testing::_)).Times(1);
 
@@ -356,7 +363,7 @@ TEST(AFDSocket, TestConnectAndLocalClose)
 
    EXPECT_EQ(pSocket, &socket);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 }
 
 TEST(AFDSocket, TestConnectAndLocalShutdownSend)
@@ -383,7 +390,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSend)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    socket.shutdown(tcp_socket::shutdown_how::send);
 
@@ -416,7 +423,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecv)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -453,7 +460,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBoth)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -490,7 +497,7 @@ TEST(AFDSocket, TestConnectAndRemoteClose)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -504,7 +511,7 @@ TEST(AFDSocket, TestConnectAndRemoteClose)
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 }
 
 TEST(AFDSocket, TestConnectAndRemoteReset)
@@ -531,7 +538,7 @@ TEST(AFDSocket, TestConnectAndRemoteReset)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -545,7 +552,7 @@ TEST(AFDSocket, TestConnectAndRemoteReset)
 
    EXPECT_EQ(pSocket, &socket);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 }
 
 TEST(AFDSocket, TestConnectAndRemoteShutdownSend)
@@ -572,7 +579,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSend)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -586,7 +593,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSend)
 
    EXPECT_EQ(pSocket, &socket);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 }
 
 TEST(AFDSocket, TestConnectAndRemoteShutdownRecv)
@@ -613,7 +620,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecv)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -629,7 +636,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecv)
    //pSocket->handle_events();
 }
 
-TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
+TEST(AFDSocket, TestConnectAndRecvMultipleSockets)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -655,7 +662,7 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    BYTE buffer[100];
 
@@ -681,7 +688,7 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    const SOCKET s2 = listeningSocket.Accept();
 
@@ -697,7 +704,7 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    available = socket1.read(buffer, buffer_length);
 
@@ -708,6 +715,12 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
    available = socket1.read(buffer, buffer_length);
 
    EXPECT_EQ(available, 0);
+
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket, &socket1);
+
+   EXPECT_EQ(pSocket->handle_events(), false);
 
    available = socket2.read(buffer, buffer_length);
 
@@ -721,7 +734,7 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    available = socket2.read(buffer, buffer_length);
 
@@ -733,12 +746,22 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    EXPECT_EQ(available, 0);
 
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket, &socket2);
+
+   EXPECT_EQ(pSocket->handle_events(), false);
+
    available = socket1.read(buffer, buffer_length);
 
    EXPECT_EQ(available, 0);
+
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+
+   EXPECT_EQ(pSocket, nullptr);
 }
 
-TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusExReadInOnReadable)
+TEST(AFDSocket, TestConnectAndRecvMultipleSocketsGetQueuedCompletionStatusExReadInOnReadable)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -799,17 +822,15 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusExReadI
    DWORD numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 2);
+   EXPECT_EQ(sockets.size(), 2);
+   EXPECT_EQ(sockets[0], &socket1);
+   EXPECT_EQ(sockets[1], &socket2);
 
    EXPECT_CALL(callbacks1, on_connected(::testing::_)).Times(1);
    EXPECT_CALL(callbacks2, on_connected(::testing::_)).Times(1);
 
-   if (numEvents)
-   {
-      for (auto *pSocket : sockets)
-      {
-         pSocket->handle_events();
-      }
-   }
+   EXPECT_EQ(sockets[0]->handle_events(), true);
+   EXPECT_EQ(sockets[1]->handle_events(), true);
 
    int available = socket1.read(buffer, buffer_length);
 
@@ -831,65 +852,60 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusExReadI
 
    // accepted...
 
+   sockets.resize(3);
+
    numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 0);
+   EXPECT_EQ(sockets.size(), 0);
 
    Write(s1, testData);
+
+   sockets.resize(3);
 
    numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 1);
+   EXPECT_EQ(sockets.size(), 1);
+   EXPECT_EQ(sockets[0], &socket1);
 
    EXPECT_CALL(callbacks1, on_readable(::testing::_)).Times(1);
 
-   if (numEvents)
-   {
-      for (auto *pSocket : sockets)
-      {
-         EXPECT_EQ(pSocket, &socket1);
-
-         pSocket->handle_events();
-      }
-   }
+   EXPECT_EQ(sockets[0]->handle_events(), true);
 
    Write(s2, testData);
+
+   sockets.resize(3);
 
    numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 1);
+   EXPECT_EQ(sockets.size(), 1);
+   EXPECT_EQ(sockets[0], &socket2);
 
    EXPECT_CALL(callbacks2, on_readable(::testing::_)).Times(1);
 
-   if (numEvents)
-   {
-      for (auto *pSocket : sockets)
-      {
-         EXPECT_EQ(pSocket, &socket2);
-
-         pSocket->handle_events();
-      }
-   }
+   EXPECT_EQ(sockets[0]->handle_events(), true);
 
    Write(s1, testData);
    Write(s2, testData);
+
+   sockets.resize(3);
 
    numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 2);
+   EXPECT_EQ(sockets.size(), 2);
+   EXPECT_EQ(sockets[0], &socket1);
+   EXPECT_EQ(sockets[1], &socket2);
 
    EXPECT_CALL(callbacks1, on_readable(::testing::_)).Times(1);
    EXPECT_CALL(callbacks2, on_readable(::testing::_)).Times(1);
 
-   if (numEvents)
-   {
-      for (auto *pSocket : sockets)
-      {
-         pSocket->handle_events();
-      }
-   }
+   EXPECT_EQ(sockets[0]->handle_events(), true);
+   EXPECT_EQ(sockets[1]->handle_events(), true);
 }
-TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusEx)
+TEST(AFDSocket, TestConnectAndRecvMultipleSocketsGetQueuedCompletionStatusEx)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -920,17 +936,15 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusEx)
    DWORD numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 2);
+   EXPECT_EQ(sockets.size(), 2);
+   EXPECT_EQ(sockets[0], &socket1);
+   EXPECT_EQ(sockets[1], &socket2);
 
    EXPECT_CALL(callbacks1, on_connected(::testing::_)).Times(1);
    EXPECT_CALL(callbacks2, on_connected(::testing::_)).Times(1);
 
-   if (numEvents)
-   {
-      for (auto *pSocket : sockets)
-      {
-         pSocket->handle_events();
-      }
-   }
+   EXPECT_EQ(sockets[0]->handle_events(), true);
+   EXPECT_EQ(sockets[1]->handle_events(), true);
 
    BYTE buffer[100];
 
@@ -956,29 +970,28 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusEx)
 
    // accepted...
 
+   sockets.resize(3);
+
    numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 0);
+   EXPECT_EQ(sockets.size(), 0);
 
    const std::string testData("test");
 
    Write(s1, testData);
 
+   sockets.resize(3);
+
    numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 1);
+   EXPECT_EQ(sockets.size(), 1);
+   EXPECT_EQ(sockets[0], &socket1);
 
    EXPECT_CALL(callbacks1, on_readable(::testing::_)).Times(1);
 
-   if (numEvents)
-   {
-      for (auto *pSocket : sockets)
-      {
-         EXPECT_EQ(pSocket, &socket1);
-
-         pSocket->handle_events();
-      }
-   }
+   EXPECT_EQ(sockets[0]->handle_events(), true);
 
    available = socket1.read(buffer, buffer_length);
 
@@ -990,23 +1003,28 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusEx)
 
    EXPECT_EQ(available, 0);
 
-   Write(s2, testData);
+   sockets.resize(3);
 
    numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 1);
+   EXPECT_EQ(sockets.size(), 1);
+   EXPECT_EQ(sockets[0], &socket1);
+   EXPECT_EQ(sockets[0]->handle_events(), false);
+
+   Write(s2, testData);
+
+   sockets.resize(3);
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 1);
+   EXPECT_EQ(sockets.size(), 1);
+   EXPECT_EQ(sockets[0], &socket2);
 
    EXPECT_CALL(callbacks2, on_readable(::testing::_)).Times(1);
 
-   if (numEvents)
-   {
-      for (auto *pSocket : sockets)
-      {
-         EXPECT_EQ(pSocket, &socket2);
-
-         pSocket->handle_events();
-      }
-   }
+   EXPECT_EQ(sockets[0]->handle_events(), true);
 
    available = socket2.read(buffer, buffer_length);
 
@@ -1017,24 +1035,33 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusEx)
    available = socket2.read(buffer, buffer_length);
 
    EXPECT_EQ(available, 0);
+
+   sockets.resize(3);
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 1);
+   EXPECT_EQ(sockets.size(), 1);
+   EXPECT_EQ(sockets[0], &socket2);
+   EXPECT_EQ(sockets[0]->handle_events(), false);
 
    Write(s1, testData);
    Write(s2, testData);
 
+   sockets.resize(3);
+
    numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 2);
+   EXPECT_EQ(sockets.size(), 2);
+   EXPECT_EQ(sockets[0], &socket1);
+   EXPECT_EQ(sockets[1], &socket2);
 
    EXPECT_CALL(callbacks1, on_readable(::testing::_)).Times(1);
    EXPECT_CALL(callbacks2, on_readable(::testing::_)).Times(1);
 
-   if (numEvents)
-   {
-      for (auto *pSocket : sockets)
-      {
-         pSocket->handle_events();
-      }
-   }
+   EXPECT_EQ(sockets[0]->handle_events(), true);
+   EXPECT_EQ(sockets[1]->handle_events(), true);
 
    available = socket1.read(buffer, buffer_length);
 
@@ -1055,6 +1082,17 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusEx)
    available = socket2.read(buffer, buffer_length);
 
    EXPECT_EQ(available, 0);
+
+   sockets.resize(3);
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 2);
+   EXPECT_EQ(sockets.size(), 2);
+   EXPECT_EQ(sockets[0], &socket1);
+   EXPECT_EQ(sockets[1], &socket2);
+   EXPECT_EQ(sockets[0]->handle_events(), false);
+   EXPECT_EQ(sockets[1]->handle_events(), false);
 }
 
 TEST(AFDSocket, TestAcceptedSocket)
@@ -1110,7 +1148,7 @@ TEST(AFDSocket, TestAcceptedSocket)
 
    EXPECT_CALL(callbacks, on_writable(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    const std::string testData("test");
 
@@ -1120,7 +1158,7 @@ TEST(AFDSocket, TestAcceptedSocket)
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    available = connected_socket.read(buffer, buffer_length);
 
@@ -1142,7 +1180,11 @@ TEST(AFDSocket, TestAcceptedSocket)
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), false);
+
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    available = accepted_socket.read(buffer, buffer_length);
 

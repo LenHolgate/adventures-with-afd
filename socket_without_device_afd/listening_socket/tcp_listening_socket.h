@@ -85,7 +85,7 @@ class tcp_listening_socket : private afd_events
       bool poll(
          ULONG events);
 
-      void handle_events() override;
+      bool handle_events() override;
 
       ULONG handle_events(
          ULONG eventsToHandle,

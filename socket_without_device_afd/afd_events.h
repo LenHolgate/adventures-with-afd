@@ -31,7 +31,7 @@ class afd_events
 {
    public :
 
-      virtual void handle_events() = 0;
+      virtual bool handle_events() = 0;
 
    protected :
 
