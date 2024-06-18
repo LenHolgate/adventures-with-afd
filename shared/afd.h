@@ -480,14 +480,21 @@ inline DWORD GetCompletionKeysAs(
 
    DWORD numEntries = 0;
 
-   if (GetQueuedCompletionStatusEx(hIOCP, &overlapped[0], sizeof(overlapped), &numEntries, timeout, FALSE))
+   DWORD completionKeyIndex = 0;
+
+   if (GetQueuedCompletionStatusEx(hIOCP, &overlapped[0], static_cast<DWORD>(overlapped.size()), &numEntries, timeout, FALSE))
    {
       for (DWORD i = 0; i < numEntries; ++i)
       {
-         completionKeys[i] = reinterpret_cast<T *>(overlapped[i].lpCompletionKey);
+         // we ignore the status results, which may be a mistake...
+
+         if (overlapped[i].lpCompletionKey)
+         {
+            completionKeys[completionKeyIndex++] = reinterpret_cast<T *>(overlapped[i].lpCompletionKey);
+         }
       }
 
-      completionKeys.resize(numEntries);
+      completionKeys.resize(completionKeyIndex);
    }
    else
    {
@@ -499,7 +506,7 @@ inline DWORD GetCompletionKeysAs(
       }
    }
 
-   return numEntries;
+   return completionKeyIndex;
 }
 
 
