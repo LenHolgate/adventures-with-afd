@@ -62,6 +62,31 @@ class mock_tcp_socket_callbacks : public tcp_socket_callbacks
    MOCK_METHOD(void, on_disconnected, (tcp_socket &), (override));
 };
 
+class mock_tcp_socket_callbacks_ex : public mock_tcp_socket_callbacks
+{
+   public:
+
+      using On_readable_callback = std::function<void(
+         tcp_socket &s)>;
+
+      mock_tcp_socket_callbacks_ex(
+         const On_readable_callback &on_readable_callback)
+         : on_readable_callback(on_readable_callback)
+      {
+
+      }
+
+      void on_readable(
+         tcp_socket &s) override
+      {
+         on_readable_callback(s);
+
+         mock_tcp_socket_callbacks::on_readable(s);
+      }
+
+      const On_readable_callback on_readable_callback;
+};
+
 TEST(AFDSocket, TestConstruct)
 {
    const auto iocp = CreateIOCP();
@@ -90,6 +115,8 @@ TEST(AFDSocket, TestConnectFail)
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, INFINITE);
 
+   EXPECT_EQ(pSocket, &socket);
+
    EXPECT_CALL(callbacks, on_connection_failed(::testing::_, ::testing::_)).Times(1);
 
    pSocket->handle_events();
@@ -114,6 +141,8 @@ TEST(AFDSocket, TestConnect)
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -140,6 +169,8 @@ TEST(AFDSocket, TestConnectAndSend)
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
+   EXPECT_EQ(pSocket, &socket);
+
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
    pSocket->handle_events();
@@ -149,6 +180,80 @@ TEST(AFDSocket, TestConnectAndSend)
    socket.write(data, sizeof data);
 }
 
+TEST(AFDSocket, TestConnectAndRecvReadInOnReadable)
+{
+   const auto listeningSocket = CreateListeningSocket();
+
+   const auto iocp = CreateIOCP();
+
+   const std::string testData("test");
+
+   BYTE buffer[100];
+
+   int buffer_length = sizeof buffer;
+
+   // In this test we issue the reads inside the on_readable callback. This
+   // results in the read that returns 0 automatically adjusting the poll
+   // to add readable back into the events we're interested in
+
+   mock_tcp_socket_callbacks_ex callbacks([&](tcp_socket &s){
+      DWORD available = s.read(buffer, buffer_length);
+
+      EXPECT_EQ(available, testData.length());
+
+      EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
+
+      available = s.read(buffer, buffer_length);
+
+      EXPECT_EQ(available, 0);
+      });
+
+   tcp_socket socket(iocp, callbacks);
+
+   sockaddr_in address{};
+
+   address.sin_family = AF_INET;
+   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   address.sin_port = htons(listeningSocket.port);
+
+   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
+
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket, &socket);
+
+   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
+
+   pSocket->handle_events();
+
+   int available = socket.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+   // Note that at present the remote end hasn't accepted
+
+   const SOCKET s = listeningSocket.Accept();
+
+   EXPECT_NE(s, INVALID_SOCKET);
+
+   // accepted...
+
+   for (auto i = 0; i < 5; ++i)
+   {
+      Write(s, testData);
+
+      pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+      EXPECT_EQ(pSocket, &socket);
+
+      EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
+
+      pSocket->handle_events();
+
+      // read is dealt with in on_readable and the poll is reset to include
+      // the readable event...
+   }
+}
 TEST(AFDSocket, TestConnectAndRecv)
 {
    const auto listeningSocket = CreateListeningSocket();
@@ -159,7 +264,7 @@ TEST(AFDSocket, TestConnectAndRecv)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address {};
+   sockaddr_in address{};
 
    address.sin_family = AF_INET;
    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -168,6 +273,8 @@ TEST(AFDSocket, TestConnectAndRecv)
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -185,30 +292,37 @@ TEST(AFDSocket, TestConnectAndRecv)
 
    const SOCKET s = listeningSocket.Accept();
 
+   EXPECT_NE(s, INVALID_SOCKET);
+
    // accepted...
 
    const std::string testData("test");
 
-   Write(s, testData);
+   for (auto i = 0; i < 5; ++i)
+   {
+      Write(s, testData);
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+      pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
+      EXPECT_EQ(pSocket, &socket);
 
-   pSocket->handle_events();
+      EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
-   available = socket.read(buffer, buffer_length);
+      pSocket->handle_events();
 
-   EXPECT_EQ(available, testData.length());
+      available = socket.read(buffer, buffer_length);
 
-   EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
+      EXPECT_EQ(available, testData.length());
 
-   available = socket.read(buffer, buffer_length);
+      EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
 
-   EXPECT_EQ(available, 0);
+      available = socket.read(buffer, buffer_length);
+
+      EXPECT_EQ(available, 0);
+   }
 }
 
-TEST(AFDSocket, TestConnectAndLocalCloseWithNoPollPending)
+TEST(AFDSocket, TestConnectAndLocalClose)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -227,6 +341,8 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithNoPollPending)
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -236,53 +352,14 @@ TEST(AFDSocket, TestConnectAndLocalCloseWithNoPollPending)
 
    socket.close();
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-}
-
-TEST(AFDSocket, TestConnectAndLocalCloseWithPollPending)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
-
-   socket.close();
-
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   EXPECT_CALL(callbacks, on_disconnected(::testing::_)).Times(1);
+   EXPECT_EQ(pSocket, &socket);
 
    pSocket->handle_events();
 }
 
-TEST(AFDSocket, TestConnectAndLocalShutdownSendNoPollPending)
+TEST(AFDSocket, TestConnectAndLocalShutdownSend)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -301,6 +378,8 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendNoPollPending)
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -313,7 +392,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendNoPollPending)
    EXPECT_EQ(pSocket, nullptr);
 }
 
-TEST(AFDSocket, TestConnectAndLocalShutdownSendWithPollPending)
+TEST(AFDSocket, TestConnectAndLocalShutdownRecv)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -333,52 +412,15 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSendWithPollPending)
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
-
-   socket.shutdown(tcp_socket::shutdown_how::send);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-}
-
-TEST(AFDSocket, TestConnectAndLocalShutdownRecvNoPollPending)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
    pSocket->handle_events();
 
    const SOCKET s = listeningSocket.Accept();
+
+   EXPECT_NE(s, INVALID_SOCKET);
 
    socket.shutdown(tcp_socket::shutdown_how::receive);
 
@@ -387,7 +429,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvNoPollPending)
    EXPECT_EQ(pSocket, nullptr);
 }
 
-TEST(AFDSocket, TestConnectAndLocalShutdownRecvWithPollPending)
+TEST(AFDSocket, TestConnectAndLocalShutdownBoth)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -407,52 +449,15 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecvWithPollPending)
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
-
-   socket.shutdown(tcp_socket::shutdown_how::receive);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-}
-
-TEST(AFDSocket, TestConnectAndLocalShutdownBothNoPollPending)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
    pSocket->handle_events();
 
    const SOCKET s = listeningSocket.Accept();
+
+   EXPECT_NE(s, INVALID_SOCKET);
 
    socket.shutdown(tcp_socket::shutdown_how::both);
 
@@ -461,7 +466,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothNoPollPending)
    EXPECT_EQ(pSocket, nullptr);
 }
 
-TEST(AFDSocket, TestConnectAndLocalShutdownBothWithPollPending)
+TEST(AFDSocket, TestConnectAndRemoteClose)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -481,46 +486,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBothWithPollPending)
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
-
-   socket.shutdown(tcp_socket::shutdown_how::both);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-}
-
-TEST(AFDSocket, TestConnectAndRemoteCloseNoPollPending)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -528,57 +494,20 @@ TEST(AFDSocket, TestConnectAndRemoteCloseNoPollPending)
 
    const SOCKET s = listeningSocket.Accept();
 
-   Close(s);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-}
-
-TEST(AFDSocket, TestConnectAndRemoteCloseWithPollPending)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
+   EXPECT_NE(s, INVALID_SOCKET);
 
    Close(s);
 
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
    pSocket->handle_events();
 }
 
-TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDetectsOnNextRead)
+TEST(AFDSocket, TestConnectAndRemoteReset)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -598,52 +527,7 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDetectsOnNextRead)
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   Close(s);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-}
-
-TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDoesNotDetectOnNextWrite)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -651,147 +535,20 @@ TEST(AFDSocket, TestConnectAndRemoteCloseWithNoPollPendingDoesNotDetectOnNextWri
 
    const SOCKET s = listeningSocket.Accept();
 
-   Close(s);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-
-   static const BYTE data[] = { 1, 2, 3, 4 };
-
-   const int sent = socket.write(data, sizeof data);
-
-   EXPECT_EQ(sent, sizeof data);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-}
-
-TEST(AFDSocket, TestConnectAndRemoteResetNoPollPending)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   Abort(s);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-}
-
-TEST(AFDSocket, TestConnectAndRemoteResetWithPollPending)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
-
-   Abort(s);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   EXPECT_NE(s, INVALID_SOCKET);
 
    EXPECT_CALL(callbacks, on_connection_reset(::testing::_)).Times(1);
 
-   pSocket->handle_events();
-}
-
-TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextRead)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
    Abort(s);
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
-
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   EXPECT_CALL(callbacks, on_connection_reset(::testing::_)).Times(1);
+   EXPECT_EQ(pSocket, &socket);
 
    pSocket->handle_events();
 }
 
-TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextWrite)
+TEST(AFDSocket, TestConnectAndRemoteShutdownSend)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -811,158 +568,28 @@ TEST(AFDSocket, TestConnectAndRemoteResetWithNoPollPendingDetectsOnNextWrite)
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   Abort(s);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-
-   static const BYTE data[] = { 1, 2, 3, 4 };
-
-   const int sent = socket.write(data, sizeof data);
-
-   EXPECT_EQ(sent, 0);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_CALL(callbacks, on_writable(::testing::_)).Times(1);
-   EXPECT_CALL(callbacks, on_connection_reset(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-}
-
-TEST(AFDSocket, TestConnectAndRemoteShutdownSendNoPollPending)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
    pSocket->handle_events();
 
    const SOCKET s = listeningSocket.Accept();
+
+   EXPECT_NE(s, INVALID_SOCKET);
 
    shutdown(s, SD_SEND);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-}
-
-TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithPollPending)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
-
-   shutdown(s, SD_SEND);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
-   pSocket->handle_events();
-}
-
-TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDetectsOnNextRead)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   shutdown(s, SD_SEND);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   //EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
-
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
+   EXPECT_EQ(pSocket, &socket);
 
    pSocket->handle_events();
 }
 
-TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDoesNotDetectOnNextWrite)
+TEST(AFDSocket, TestConnectAndRemoteShutdownRecv)
 {
    const auto listeningSocket = CreateListeningSocket();
 
@@ -982,101 +609,24 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSendWithNoPollPendingDoesNotDetectOn
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   shutdown(s, SD_SEND);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-
-   static const BYTE data[] = { 1, 2, 3, 4 };
-
-   const int sent = socket.write(data, sizeof data);
-
-   EXPECT_EQ(sent, sizeof data);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
-}
-
-TEST(AFDSocket, TestConnectAndRemoteShutdownRecvNoPollPending)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   EXPECT_EQ(pSocket, &socket);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
    pSocket->handle_events();
 
    const SOCKET s = listeningSocket.Accept();
+
+   EXPECT_NE(s, INVALID_SOCKET);
 
    shutdown(s, SD_RECEIVE);
 
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
-}
 
-TEST(AFDSocket, TestConnectAndRemoteShutdownRecvWithPollPendingDetectsNothing)
-{
-   const auto listeningSocket = CreateListeningSocket();
-
-   const auto iocp = CreateIOCP();
-
-   mock_tcp_socket_callbacks callbacks;
-
-   tcp_socket socket(iocp, callbacks);
-
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   pSocket->handle_events();
-
-   const SOCKET s = listeningSocket.Accept();
-
-   BYTE buffer[100];
-
-   int buffer_length = sizeof buffer;
-
-   int available = socket.read(buffer, buffer_length);
-
-   EXPECT_EQ(available, 0);
-
-   shutdown(s, SD_RECEIVE);
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
-
-   EXPECT_EQ(pSocket, nullptr);
+   //do we ever get told? what about a write? does that fail??
+   //pSocket->handle_events();
 }
 
 TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
@@ -1101,7 +651,7 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   //EXPECT_EQ(pSocket, &socket1);
+   EXPECT_EQ(pSocket, &socket1);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -1119,13 +669,15 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    const SOCKET s1 = listeningSocket.Accept();
 
+   EXPECT_NE(s1, INVALID_SOCKET);
+
    // accepted...
 
    socket2.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
-   //EXPECT_EQ(pSocket, &socket2);
+   EXPECT_EQ(pSocket, &socket2);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
@@ -1133,11 +685,15 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    const SOCKET s2 = listeningSocket.Accept();
 
+   EXPECT_NE(s2, INVALID_SOCKET);
+
    const std::string testData("test");
 
    Write(s1, testData);
 
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket, &socket1);
 
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
@@ -1161,6 +717,8 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
+   EXPECT_EQ(pSocket, &socket2);
+
    EXPECT_CALL(callbacks, on_readable(::testing::_)).Times(1);
 
    pSocket->handle_events();
@@ -1175,8 +733,175 @@ TEST(AFDSocket, TestConnectAndRecvMultiplSockets)
 
    EXPECT_EQ(available, 0);
 
+   available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+}
+
+TEST(AFDSocket, TestConnectAndRecvMultiplSocketsGetQueuedCompletionStatusEx)
+{
+   const auto listeningSocket = CreateListeningSocket();
+
+   const auto iocp = CreateIOCP();
+
+   mock_tcp_socket_callbacks callbacks1;
+
+   tcp_socket socket1(iocp, callbacks1);
+
+   mock_tcp_socket_callbacks callbacks2;
+
+   tcp_socket socket2(iocp, callbacks2);
+
+   sockaddr_in address {};
+
+   address.sin_family = AF_INET;
+   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   address.sin_port = htons(listeningSocket.port);
+
+   socket1.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
+
+   socket2.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
+
+   std::vector<afd_events *> sockets;
+
+   sockets.resize(3);
+
+   DWORD numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 2);
+
+   EXPECT_CALL(callbacks1, on_connected(::testing::_)).Times(1);
+   EXPECT_CALL(callbacks2, on_connected(::testing::_)).Times(1);
+
+   if (numEvents)
+   {
+      for (auto *pSocket : sockets)
+      {
+         pSocket->handle_events();
+      }
+   }
+
+   BYTE buffer[100];
+
+   int buffer_length = sizeof buffer;
+
+   int available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+   available = socket2.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+   // Accept the connections on our listening socket
+
+   const SOCKET s1 = listeningSocket.Accept();
+
+   EXPECT_NE(s1, INVALID_SOCKET);
+
+   const SOCKET s2 = listeningSocket.Accept();
+
+   EXPECT_NE(s2, INVALID_SOCKET);
+
+   // accepted...
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 0);
+
+   const std::string testData("test");
+
+   Write(s1, testData);
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 1);
+
+   EXPECT_CALL(callbacks1, on_readable(::testing::_)).Times(1);
+
+   if (numEvents)
+   {
+      for (auto *pSocket : sockets)
+      {
+         EXPECT_EQ(pSocket, &socket1);
+
+         pSocket->handle_events();
+      }
+   }
 
    available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, testData.length());
+
+   EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
+
+   available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+   Write(s2, testData);
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 1);
+
+   EXPECT_CALL(callbacks2, on_readable(::testing::_)).Times(1);
+
+   if (numEvents)
+   {
+      for (auto *pSocket : sockets)
+      {
+         EXPECT_EQ(pSocket, &socket2);
+
+         pSocket->handle_events();
+      }
+   }
+
+   available = socket2.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, testData.length());
+
+   EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
+
+   available = socket2.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+   Write(s1, testData);
+   Write(s2, testData);
+
+   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+
+   EXPECT_EQ(numEvents, 2);
+
+   EXPECT_CALL(callbacks1, on_readable(::testing::_)).Times(1);
+   EXPECT_CALL(callbacks2, on_readable(::testing::_)).Times(1);
+
+   if (numEvents)
+   {
+      for (auto *pSocket : sockets)
+      {
+         pSocket->handle_events();
+      }
+   }
+
+   available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, testData.length());
+
+   EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
+
+   available = socket1.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, 0);
+
+   available = socket2.read(buffer, buffer_length);
+
+   EXPECT_EQ(available, testData.length());
+
+   EXPECT_EQ(0, memcmp(testData.c_str(), buffer, available));
+
+   available = socket2.read(buffer, buffer_length);
 
    EXPECT_EQ(available, 0);
 }
