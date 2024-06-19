@@ -60,6 +60,7 @@ class mock_tcp_socket_callbacks : public tcp_socket_callbacks
    MOCK_METHOD(void, on_client_close, (tcp_socket &), (override));
    MOCK_METHOD(void, on_connection_reset, (tcp_socket &), (override));
    MOCK_METHOD(void, on_disconnected, (tcp_socket &), (override));
+   MOCK_METHOD(void, on_connection_complete, (), (override));
 };
 
 class mock_tcp_socket_callbacks_ex : public mock_tcp_socket_callbacks
@@ -355,13 +356,14 @@ TEST(AFDSocket, TestConnectAndLocalClose)
 
    EXPECT_EQ(pSocket->handle_events(), true);
 
-   EXPECT_CALL(callbacks, on_disconnected(::testing::_)).Times(1);
-
    socket.close();
 
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_EQ(pSocket, &socket);
+
+   EXPECT_CALL(callbacks, on_disconnected(::testing::_)).Times(1);
+   EXPECT_CALL(callbacks, on_connection_complete()).Times(1);
 
    EXPECT_EQ(pSocket->handle_events(), true);
 }
@@ -512,6 +514,10 @@ TEST(AFDSocket, TestConnectAndRemoteClose)
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
    EXPECT_EQ(pSocket->handle_events(), true);
+
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+
+   EXPECT_EQ(pSocket, nullptr);
 }
 
 TEST(AFDSocket, TestConnectAndRemoteReset)
@@ -553,6 +559,10 @@ TEST(AFDSocket, TestConnectAndRemoteReset)
    EXPECT_EQ(pSocket, &socket);
 
    EXPECT_EQ(pSocket->handle_events(), true);
+
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+
+   EXPECT_EQ(pSocket, nullptr);
 }
 
 TEST(AFDSocket, TestConnectAndRemoteShutdownSend)
@@ -594,6 +604,10 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSend)
    EXPECT_EQ(pSocket, &socket);
 
    EXPECT_EQ(pSocket->handle_events(), true);
+
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+
+   EXPECT_EQ(pSocket, nullptr);
 }
 
 TEST(AFDSocket, TestConnectAndRemoteShutdownRecv)
@@ -628,12 +642,28 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecv)
 
    shutdown(s, SD_RECEIVE);
 
+   // we only spot the fact that the peer is not longer able to read if we try
+   // and write to it
+
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 
-   //do we ever get told? what about a write? does that fail??
-   //pSocket->handle_events();
+   static const BYTE data[] = { 1, 2, 3, 4 };
+
+   socket.write(data, sizeof data);
+
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+
+   EXPECT_EQ(pSocket, &socket);
+
+   EXPECT_CALL(callbacks, on_connection_reset(::testing::_)).Times(1);
+
+   EXPECT_EQ(pSocket->handle_events(), true);
+
+   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+
+   EXPECT_EQ(pSocket, nullptr);
 }
 
 TEST(AFDSocket, TestConnectAndRecvMultipleSockets)
@@ -1119,7 +1149,7 @@ TEST(AFDSocket, TestAcceptedSocket)
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   pSocket->handle_events();
+   EXPECT_EQ(pSocket->handle_events(), true);
 
    BYTE buffer[100];
 
@@ -1138,15 +1168,13 @@ TEST(AFDSocket, TestAcceptedSocket)
       listeningSocket.Accept(),
       callbacks);
 
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
    accepted_socket.accepted();
 
    pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_EQ(pSocket, &accepted_socket);
 
-   EXPECT_CALL(callbacks, on_writable(::testing::_)).Times(1);
+   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
    EXPECT_EQ(pSocket->handle_events(), true);
 

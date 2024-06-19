@@ -211,6 +211,13 @@ class echo_server_connection : private tcp_socket_callbacks
          (void)s;
       }
 
+      void on_connection_complete() override
+      {
+         std::cout << this << " - on_connection_complete" << std::endl;
+
+         delete this;
+      }
+
       tcp_socket s;
 
       BYTE recv_buffer[100];

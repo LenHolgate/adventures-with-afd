@@ -60,6 +60,8 @@ class tcp_socket_callbacks
       virtual void on_disconnected(
          tcp_socket &s) = 0;
 
+      virtual void on_connection_complete() = 0;
+
    protected :
 
       virtual ~tcp_socket_callbacks() = default;
@@ -133,6 +135,7 @@ class tcp_socket : public afd_events
       {
          created,
          pending_connect,
+         pending_accept,
          connected,
          client_closed,
          disconnected

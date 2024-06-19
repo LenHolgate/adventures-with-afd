@@ -220,6 +220,11 @@ class echo_client : private tcp_socket_callbacks
          is_done = true;
       }
 
+      void on_connection_complete() override
+      {
+         std::cout << "on_connection_complete" << std::endl;
+      }
+
       tcp_socket s;
 
       bool is_done;

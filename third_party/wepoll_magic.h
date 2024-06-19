@@ -90,14 +90,19 @@ struct AFD_POLL_INFO {
 
 enum
 {
-   AFD_POLL_RECEIVE           = 0x0001,
-   AFD_POLL_RECEIVE_EXPEDITED = 0x0002,
-   AFD_POLL_SEND              = 0x0004,
-   AFD_POLL_DISCONNECT        = 0x0008,
-   AFD_POLL_ABORT             = 0x0010,
-   AFD_POLL_LOCAL_CLOSE       = 0x0020,
-   AFD_POLL_ACCEPT            = 0x0080,
-   AFD_POLL_CONNECT_FAIL      = 0x0100
+   AFD_POLL_RECEIVE                    = 0x0001,
+   AFD_POLL_RECEIVE_EXPEDITED          = 0x0002,
+   AFD_POLL_SEND                       = 0x0004,
+   AFD_POLL_DISCONNECT                 = 0x0008,
+   AFD_POLL_ABORT                      = 0x0010,
+   AFD_POLL_LOCAL_CLOSE                = 0x0020,
+   AFD_POLL_CONNECT                    = 0x0040,
+   AFD_POLL_ACCEPT                     = 0x0080,
+   AFD_POLL_CONNECT_FAIL               = 0x0100,
+   AFD_POLL_QOS                        = 0x0200,
+   AFD_POLL_GROUP_QOS                  = 0x0400,
+   AFD_POLL_ROUTING_INTERFACE_CHANGE   = 0x0800,
+   AFD_POLL_ADDRESS_LIST_CHANGE        = 0x1000
 };
 
 static SOCKET GetBaseSocket(

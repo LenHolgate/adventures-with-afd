@@ -152,6 +152,7 @@ static constexpr ULONG AllEventsExceptSend =
    AFD_POLL_DISCONNECT |               // client close
    AFD_POLL_ABORT |                    // closed
    AFD_POLL_LOCAL_CLOSE |              // we have closed
+   AFD_POLL_CONNECT |                  // connection established
    AFD_POLL_ACCEPT |                   // connection accepted on listening
    AFD_POLL_CONNECT_FAIL;              // outbound connection failed
 

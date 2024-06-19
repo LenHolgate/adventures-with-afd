@@ -163,9 +163,7 @@ void tcp_socket::accepted()
       throw std::exception("already accepted");
    }
 
-   connection_state = state::connected;
-
-   callbacks.on_connected(*this);
+   connection_state = state::pending_accept;
 
    events = AllEvents;
 
@@ -175,7 +173,7 @@ void tcp_socket::accepted()
 bool tcp_socket::poll(
    const ULONG events)
 {
-   DEBUGGING(std::cout << this << " - poll" << std::endl);
+   DEBUGGING(std::cout << this << " - poll - " << std::hex << events << std::endl);
 
    if (s != INVALID_SOCKET)
    {
@@ -229,6 +227,7 @@ int tcp_socket::write(
           lastError == WSAECONNABORTED ||
           lastError == WSAENETRESET)
       {
+         DEBUGGING(std::cout << this << " - write - connection aborted" << std::endl);
          //handle_events(AFD_POLL_ABORT, 0);
       }
       else if (lastError != WSAEWOULDBLOCK)
@@ -275,6 +274,7 @@ int tcp_socket::read(
 
    if (bytes == 0)
    {
+      DEBUGGING(std::cout << this << " - read - client closed" << std::endl);
       //handle_events(AFD_POLL_DISCONNECT, 0);
    }
 
@@ -286,6 +286,8 @@ int tcp_socket::read(
           lastError == WSAECONNABORTED ||
           lastError == WSAENETRESET)
       {
+         DEBUGGING(std::cout << this << " - read - connection aborted" << std::endl);
+
          //handle_events(AFD_POLL_ABORT, 0);
       }
       else if (lastError != WSAEWOULDBLOCK)
@@ -383,9 +385,16 @@ bool tcp_socket::handle_events()
 
          handling_events = false;
 
-         if (pollInfoIn.Handles[0].Events)
+         if (s != INVALID_SOCKET)
          {
-            poll(pollInfoIn.Handles[0].Events);
+            if (pollInfoIn.Handles[0].Events)
+            {
+               poll(pollInfoIn.Handles[0].Events);
+            }
+         }
+         else
+         {
+            callbacks.on_connection_complete();
          }
       }
    }
@@ -404,7 +413,10 @@ ULONG tcp_socket::handle_events(
    // need to know what state we're in as we would do one thing for connect and other things when
    // connected?
 
-   if (connection_state == state::pending_connect)
+   DEBUGGING(std::cout << this << " - handle_events: " << std::hex << eventsToHandle << std::endl);
+
+   if (connection_state == state::pending_connect ||
+       connection_state == state::pending_accept)
    {
       if (AFD_POLL_CONNECT_FAIL & eventsToHandle)
       {
@@ -414,10 +426,11 @@ ULONG tcp_socket::handle_events(
 
          callbacks.on_connection_failed(*this, status);
       }
-      else if (AFD_POLL_SEND & eventsToHandle)
+      else if (AFD_POLL_CONNECT & eventsToHandle)
       {
          connection_state = state::connected;
 
+         events &= ~AFD_POLL_CONNECT;
          events &= ~AFD_POLL_SEND;
 
          callbacks.on_connected(*this);
@@ -457,14 +470,11 @@ ULONG tcp_socket::handle_events(
    {
       events &= ~AFD_POLL_DISCONNECT;
 
-      if (connection_state != state::client_closed)
-      {
-         // not sure why we are suddenly getting this multiple times...
+      DEBUGGING(std::cout << this << " - AFD_POLL_DISCONNECT" << std::endl);
 
-         connection_state = state::client_closed;
+      callbacks.on_client_close(*this);
 
-         callbacks.on_client_close(*this);
-      }
+      connection_state = state::client_closed;
    }
 
    if (AFD_POLL_LOCAL_CLOSE & eventsToHandle)
