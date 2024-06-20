@@ -139,17 +139,36 @@ TEST(AFDSocket, TestConnect)
    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
    address.sin_port = htons(listeningSocket.port);
 
+   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
+
    socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
-   EXPECT_EQ(pSocket, &socket);
+   EXPECT_EQ(pSocket, nullptr);
+}
+
+static void ValidateConnect(
+   USHORT port,
+   tcp_socket &socket,
+   mock_tcp_socket_callbacks &callbacks,
+   HANDLE iocp)
+{
+   sockaddr_in address {};
+
+   address.sin_family = AF_INET;
+   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   address.sin_port = htons(port);
 
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   EXPECT_EQ(pSocket->handle_events(), true);
-}
+   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
 
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+
+   EXPECT_EQ(pSocket, nullptr);
+
+}
 TEST(AFDSocket, TestConnectAndSend)
 {
    const auto listeningSocket = CreateListeningSocket();
@@ -160,21 +179,7 @@ TEST(AFDSocket, TestConnectAndSend)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    static const BYTE data[] = { 1, 2, 3, 4 };
 
@@ -211,21 +216,7 @@ TEST(AFDSocket, TestConnectAndRecvReadInOnReadable)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address{};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    int available = socket.read(buffer, buffer_length);
 
@@ -243,7 +234,7 @@ TEST(AFDSocket, TestConnectAndRecvReadInOnReadable)
    {
       Write(s, testData);
 
-      pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+      auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
       EXPECT_EQ(pSocket, &socket);
 
@@ -265,21 +256,7 @@ TEST(AFDSocket, TestConnectAndRecv)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address{};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    BYTE buffer[100];
 
@@ -303,7 +280,7 @@ TEST(AFDSocket, TestConnectAndRecv)
    {
       Write(s, testData);
 
-      pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+      auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
       EXPECT_EQ(pSocket, &socket);
 
@@ -340,25 +317,11 @@ TEST(AFDSocket, TestConnectAndLocalClose)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    socket.close();
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_EQ(pSocket, &socket);
 
@@ -378,25 +341,11 @@ TEST(AFDSocket, TestConnectAndLocalShutdownSend)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    socket.shutdown(tcp_socket::shutdown_how::send);
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -411,21 +360,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecv)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -433,7 +368,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownRecv)
 
    socket.shutdown(tcp_socket::shutdown_how::receive);
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -448,21 +383,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBoth)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -470,7 +391,7 @@ TEST(AFDSocket, TestConnectAndLocalShutdownBoth)
 
    socket.shutdown(tcp_socket::shutdown_how::both);
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 }
@@ -485,21 +406,7 @@ TEST(AFDSocket, TestConnectAndRemoteClose)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -507,7 +414,7 @@ TEST(AFDSocket, TestConnectAndRemoteClose)
 
    Close(s);
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_EQ(pSocket, &socket);
 
@@ -530,21 +437,7 @@ TEST(AFDSocket, TestConnectAndRemoteReset)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -554,7 +447,7 @@ TEST(AFDSocket, TestConnectAndRemoteReset)
 
    Abort(s);
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_EQ(pSocket, &socket);
 
@@ -575,21 +468,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSend)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -599,7 +478,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownSend)
 
    EXPECT_CALL(callbacks, on_client_close(::testing::_)).Times(1);
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_EQ(pSocket, &socket);
 
@@ -620,21 +499,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecv)
 
    tcp_socket socket(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket, callbacks, iocp);
 
    const SOCKET s = listeningSocket.Accept();
 
@@ -645,7 +510,7 @@ TEST(AFDSocket, TestConnectAndRemoteShutdownRecv)
    // we only spot the fact that the peer is not longer able to read if we try
    // and write to it
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+   auto pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
 
    EXPECT_EQ(pSocket, nullptr);
 
@@ -678,21 +543,7 @@ TEST(AFDSocket, TestConnectAndRecvMultipleSockets)
 
    tcp_socket socket2(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket1.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket1);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket1, callbacks, iocp);
 
    BYTE buffer[100];
 
@@ -710,15 +561,7 @@ TEST(AFDSocket, TestConnectAndRecvMultipleSockets)
 
    // accepted...
 
-   socket2.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &socket2);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket2, callbacks, iocp);
 
    const SOCKET s2 = listeningSocket.Accept();
 
@@ -728,7 +571,7 @@ TEST(AFDSocket, TestConnectAndRecvMultipleSockets)
 
    Write(s1, testData);
 
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
 
    EXPECT_EQ(pSocket, &socket1);
 
@@ -835,32 +678,9 @@ TEST(AFDSocket, TestConnectAndRecvMultipleSocketsGetQueuedCompletionStatusExRead
 
    tcp_socket socket2(iocp, callbacks2);
 
-   sockaddr_in address {};
+   ValidateConnect(listeningSocket.port, socket1, callbacks1, iocp);
 
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket1.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   socket2.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   std::vector<afd_events *> sockets;
-
-   sockets.resize(3);
-
-   DWORD numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
-
-   EXPECT_EQ(numEvents, 2);
-   EXPECT_EQ(sockets.size(), 2);
-   EXPECT_EQ(sockets[0], &socket1);
-   EXPECT_EQ(sockets[1], &socket2);
-
-   EXPECT_CALL(callbacks1, on_connected(::testing::_)).Times(1);
-   EXPECT_CALL(callbacks2, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(sockets[0]->handle_events(), true);
-   EXPECT_EQ(sockets[1]->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket2, callbacks2, iocp);
 
    int available = socket1.read(buffer, buffer_length);
 
@@ -882,9 +702,11 @@ TEST(AFDSocket, TestConnectAndRecvMultipleSocketsGetQueuedCompletionStatusExRead
 
    // accepted...
 
+   std::vector<afd_events *> sockets;
+
    sockets.resize(3);
 
-   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+   DWORD numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 0);
    EXPECT_EQ(sockets.size(), 0);
@@ -949,32 +771,9 @@ TEST(AFDSocket, TestConnectAndRecvMultipleSocketsGetQueuedCompletionStatusEx)
 
    tcp_socket socket2(iocp, callbacks2);
 
-   sockaddr_in address {};
+   ValidateConnect(listeningSocket.port, socket1, callbacks1, iocp);
 
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   socket1.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   socket2.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   std::vector<afd_events *> sockets;
-
-   sockets.resize(3);
-
-   DWORD numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
-
-   EXPECT_EQ(numEvents, 2);
-   EXPECT_EQ(sockets.size(), 2);
-   EXPECT_EQ(sockets[0], &socket1);
-   EXPECT_EQ(sockets[1], &socket2);
-
-   EXPECT_CALL(callbacks1, on_connected(::testing::_)).Times(1);
-   EXPECT_CALL(callbacks2, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(sockets[0]->handle_events(), true);
-   EXPECT_EQ(sockets[1]->handle_events(), true);
+   ValidateConnect(listeningSocket.port, socket2, callbacks2, iocp);
 
    BYTE buffer[100];
 
@@ -1000,9 +799,11 @@ TEST(AFDSocket, TestConnectAndRecvMultipleSocketsGetQueuedCompletionStatusEx)
 
    // accepted...
 
+   std::vector<afd_events *> sockets;
+
    sockets.resize(3);
 
-   numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
+   DWORD numEvents = GetCompletionKeysAs(iocp, SHORT_TIME_NON_ZERO, sockets);
 
    EXPECT_EQ(numEvents, 0);
    EXPECT_EQ(sockets.size(), 0);
@@ -1135,21 +936,7 @@ TEST(AFDSocket, TestAcceptedSocket)
 
    tcp_socket connected_socket(iocp, callbacks);
 
-   sockaddr_in address {};
-
-   address.sin_family = AF_INET;
-   address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   address.sin_port = htons(listeningSocket.port);
-
-   connected_socket.connect(reinterpret_cast<const sockaddr &>(address), sizeof(address));
-
-   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &connected_socket);
-
-   EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
-
-   EXPECT_EQ(pSocket->handle_events(), true);
+   ValidateConnect(listeningSocket.port, connected_socket, callbacks, iocp);
 
    BYTE buffer[100];
 
@@ -1168,15 +955,13 @@ TEST(AFDSocket, TestAcceptedSocket)
       listeningSocket.Accept(),
       callbacks);
 
-   accepted_socket.accepted();
-
-   pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO);
-
-   EXPECT_EQ(pSocket, &accepted_socket);
-
    EXPECT_CALL(callbacks, on_connected(::testing::_)).Times(1);
 
-   EXPECT_EQ(pSocket->handle_events(), true);
+   accepted_socket.accepted();
+
+   auto *pSocket = GetCompletionKeyAs<afd_events>(iocp, SHORT_TIME_NON_ZERO, WAIT_TIMEOUT);
+
+   EXPECT_EQ(pSocket, nullptr);
 
    const std::string testData("test");
 

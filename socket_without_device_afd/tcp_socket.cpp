@@ -98,7 +98,7 @@ tcp_socket::tcp_socket(
       ErrorExit("CreateIoCompletionPort");
    }
 
-   if (!SetFileCompletionNotificationModes(reinterpret_cast<HANDLE>(baseSocket), FILE_SKIP_SET_EVENT_ON_HANDLE))
+   if (!SetFileCompletionNotificationModes(reinterpret_cast<HANDLE>(baseSocket), FILE_SKIP_COMPLETION_PORT_ON_SUCCESS |FILE_SKIP_SET_EVENT_ON_HANDLE))
    {
       ErrorExit("SetFileCompletionNotificationModes");
    }
@@ -186,14 +186,19 @@ bool tcp_socket::poll(
 
       memset(&statusBlock, 0, sizeof statusBlock);
 
-      return SetupPollForSocketEventsX(
+      if (SetupPollForSocketEventsX(
          reinterpret_cast<HANDLE>(baseSocket),
          &pollInfoIn,
          sizeof pollInfoIn,
          statusBlock,
          &pollInfoOut,
          sizeof pollInfoOut,
-         &statusBlock);
+         &statusBlock))
+      {
+         // beware recursion on reads issues in read completions...
+
+         return handle_events();
+      }
    }
 
    return false;
@@ -389,6 +394,7 @@ bool tcp_socket::handle_events()
          {
             if (pollInfoIn.Handles[0].Events)
             {
+               // deal with potential recursion here by using a loop
                poll(pollInfoIn.Handles[0].Events);
             }
          }
