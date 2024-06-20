@@ -143,7 +143,7 @@ TEST_F(AFDUnderstand, TestConnect)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -161,7 +161,10 @@ TEST_F(AFDUnderstand, TestConnect)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
    ReadClientClose(data.s);
 }
@@ -180,7 +183,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -199,7 +202,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
    ReadClientClose(data.s);
 
@@ -215,7 +221,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownSend)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
    ReadClientClose(data.s);      // continues to return 0 
 }
@@ -234,7 +243,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -253,7 +262,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    Close(s);
 
@@ -265,7 +274,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteShutdownRecv)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
    ReadClientClose(data.s);
 }
@@ -284,7 +296,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -303,7 +315,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    Abort(s);
 
@@ -313,7 +328,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteRST)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_ABORT, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND | AFD_POLL_ABORT, pData->pollInfo.Handles[0].Events);
 
    ReadFails(data.s, WSAECONNRESET);
 }
@@ -332,7 +350,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -350,7 +368,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND | AFD_POLL_RECEIVE, pData->pollInfo.Handles[0].Events);
 
    EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s));
 
@@ -360,7 +381,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSend)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    Close(s);
 }
@@ -379,7 +403,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -398,7 +422,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
 
    // No normal data...
 
@@ -410,7 +437,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
 
    EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s, MSG_OOB));
 
@@ -420,7 +450,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOB)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    Close(s);
 }
@@ -439,7 +472,7 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -462,7 +495,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND | AFD_POLL_RECEIVE | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
 
    // normal data...
 
@@ -474,7 +510,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND | AFD_POLL_RECEIVE_EXPEDITED, pData->pollInfo.Handles[0].Events);
 
    EXPECT_EQ(testData.length(), ReadAndDiscardAllAvailable(data.s, MSG_OOB));
 
@@ -484,7 +523,10 @@ TEST_F(AFDUnderstand, TestConnectAndRemoteSendOOBAndNormalData)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    Close(s);
 }
@@ -507,7 +549,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -521,7 +563,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    const std::string testData("This message will be sent until it can't be sent");
 
@@ -561,7 +606,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
             ASSERT_EQ(pData, &data);
 
-            if (AFD_POLL_SEND == pData->pollInfo.Handles[0].Events)
+            // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+            // events that we listen for once we're connected...
+
+            if ((AFD_POLL_CONNECT | AFD_POLL_SEND) == pData->pollInfo.Handles[0].Events)
             {
                done = false;
             }
@@ -579,7 +627,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    Close(s);
 }
@@ -602,7 +653,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -616,7 +667,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    const std::string testData("This message will be sent until it can't be sent");
 
@@ -641,11 +695,21 @@ TEST_F(AFDUnderstand, TestConnectAndLocalSend2)
    }
    while (!done);
 
-   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   // No events available as AFD_POLL_SEND was the only event set and we have filled the
+   // send and recv buffer and TCP flow control has prevented us sending any more...
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents & ~AFD_POLL_CONNECT));
 
    EXPECT_EQ(totalSent, ReadAndDiscardAllAvailable(s));
 
-   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   // No events available as AFD_POLL_SEND was the only event set and we have filled the
+   // send and recv buffer and TCP flow control has prevented us sending any more...
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents & ~AFD_POLL_CONNECT));
 
    pData = GetCompletionAs<PollData>(handles.iocp, REASONABLE_TIME);
 
@@ -672,7 +736,7 @@ TEST_F(AFDUnderstand, TestConnectAndLocalClose)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -680,7 +744,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalClose)
 
    // accepted...
 
-   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we MUST mask that out of the
+   // events that we listen for once we're connected...
+
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend & ~AFD_POLL_CONNECT));
 
    Close(data.s);
 
@@ -709,7 +776,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -717,7 +787,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownSend)
 
    // accepted...
 
-   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend & ~AFD_POLL_CONNECT));
 
    if (SOCKET_ERROR == shutdown(data.s, SD_SEND))
    {
@@ -747,7 +820,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -755,7 +831,10 @@ TEST_F(AFDUnderstand, TestConnectAndLocalShutdownRecv)
 
    // accepted...
 
-   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend));
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEventsExceptSend & ~AFD_POLL_CONNECT));
 
    if (SOCKET_ERROR == shutdown(data.s, SD_RECEIVE))
    {
@@ -824,7 +903,7 @@ TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // poll again for this socket - no changes, socket stays writable, polling is level triggered...
 
@@ -834,7 +913,10 @@ TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // poll again for this socket - no changes, socket stays writable, polling is level triggered...
 
@@ -844,7 +926,10 @@ TEST_F(AFDUnderstand, TestPollIsLevelTriggered)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 }
 
 TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
@@ -861,7 +946,7 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Note that at present the remote end hasn't accepted
 
@@ -873,12 +958,17 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // This next poll will return the socket state as of NOW when we query the result
    // from the IOCP after the state change...
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we MUST mask that out of the
+   // events that we listen for once we're connected...
 
-   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(false, SetupPollForSocketEvents(handles.afd, data, AllEvents & ~(AFD_POLL_CONNECT | AFD_POLL_SEND)));
 
    // accepted...
 
@@ -890,17 +980,22 @@ TEST_F(AFDUnderstand, TestPollCompletionReportsStateAtTimeOfPoll)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
    // This next poll will report the disconnect...
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we MUST mask that out of the
+   // events that we listen for once we're connected...
 
-   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents));
+   ASSERT_EQ(true, SetupPollForSocketEvents(handles.afd, data, AllEvents & ~(AFD_POLL_CONNECT | AFD_POLL_SEND)));
 
    pData = GetCompletionAs<PollData>(handles.iocp, 0);
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND | AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
+   // as we are level triggered we stay in 'AFD_POLL_CONNECT' state so we could mask that out of the
+   // events that we listen for once we're connected...
+
+   EXPECT_EQ(AFD_POLL_DISCONNECT, pData->pollInfo.Handles[0].Events);
 
    ReadClientClose(data.s);
 }
@@ -924,7 +1019,7 @@ TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // poll again for this socket - no changes, socket stays writable, polling is level triggered...
    // FILE_SKIP_COMPLETION_PORT_ON_SUCCESS means we get the poll information back immediately and
@@ -934,7 +1029,7 @@ TEST_F(AFDUnderstand, TestSkipCompletionPortOnSuccess)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles.iocp, 0, WAIT_TIMEOUT));
 }
@@ -1093,7 +1188,7 @@ TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Nothing on the other IOCP...
    ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles2.iocp, 0, WAIT_TIMEOUT));
@@ -1108,7 +1203,7 @@ TEST(AFDMultipleAFD, TestDuplicateNameAssociateSocket)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // Nothing on the other IOCP...
    ASSERT_EQ(nullptr, GetCompletionAs<PollData>(handles1.iocp, 0, WAIT_TIMEOUT));
@@ -1140,7 +1235,7 @@ TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 
    // poll again for this socket - no changes, socket stays writable, polling is level triggered...
    // but we use a different afd handle and IOCP, potentially moving this socket from one thread
@@ -1152,7 +1247,7 @@ TEST(AFDMultipleAFD, TestMoveSocketBetweenAfdHandles)
 
    ASSERT_EQ(pData, &data);
 
-   EXPECT_EQ(AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
+   EXPECT_EQ(AFD_POLL_CONNECT | AFD_POLL_SEND, pData->pollInfo.Handles[0].Events);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
